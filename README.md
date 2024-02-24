@@ -1,12 +1,16 @@
 # HW03: Semantic Segmentation and Model Monitoring
 
-TODO - Update your team name tagging all contributors by first and lastname
-TODO - Add the following badges
-- PyTorch
-- PyTorch Lightning
-- NumPy
-- Weights and Biases
-- Scikit Learn
+## Hungry Hungry Hippos
+@Bavhead  
+@anakash  
+@TanushGo  
+@sebu  
+
+![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)
+[![PyTorch Lightning](https://img.shields.io/badge/pytorch-lightning-blue.svg?logo=PyTorch%20Lightning)](https://github.com/Lightning-AI/lightning)
+![NumPy](https://img.shields.io/badge/numpy-%23013243.svg?style=for-the-badge&logo=numpy&logoColor=white)
+![Weights and Biases](https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28.svg)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white)
 
 
 ## Assignment Overview
