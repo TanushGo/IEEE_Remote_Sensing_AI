@@ -134,7 +134,7 @@ to restitch the predictions and groundtruth back to the original 16x16 dimension
 - If you need to be considered for partial grade for any reason (failing tests on github actions,etc). Then message the staff on discord before the deadline. Late requests may not be considered.
 
 ### References
-[Overview of Semantic Segmentation](https://www.jeremyjordan.me/semantic-segmentation/)
-[Cook Your First UNET in Pytorch](https://towardsdatascience.com/cook-your-first-u-net-in-pytorch-b3297a844cf3)
+- [Overview of Semantic Segmentation](https://www.jeremyjordan.me/semantic-segmentation/)
+- [Cook Your First UNET in Pytorch](https://towardsdatascience.com/cook-your-first-u-net-in-pytorch-b3297a844cf3)
 
     
