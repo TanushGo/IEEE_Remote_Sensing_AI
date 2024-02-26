@@ -44,7 +44,7 @@ def collate_fn(batch):
 
     Xs = np.stack(Xs)
     ys = np.stack(ys)
-    return Xs, ys, metadatas
+    return torch.stack(Xs), torch.stack(ys), metadatas
 
 class ESDDataModule(pl.LightningDataModule):
     """
