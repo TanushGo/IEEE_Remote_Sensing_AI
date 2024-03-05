@@ -33,7 +33,7 @@ class FCNResnetTransfer(nn.Module):
         
         # Replace the first and last layer of the network so that the number of channels fits with
         # the number of channels of the image and the number of classes we are predicting
-        print("tesst")
+        print("update my branch")
         raise NotImplementedError
 
       
