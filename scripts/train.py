@@ -59,11 +59,7 @@ def train(options: ESDConfig):
             options for the experiment
     """
     # Initialize the weights and biases logger
-<<<<<<< HEAD
-    
-=======
     wandb.init(project="CS175", name=options.wandb_run_name, config=options.__dict__)
->>>>>>> 8b10ddac4a4263510d8ccbae5a78a2e647d333e2
 
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
