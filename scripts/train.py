@@ -59,19 +59,23 @@ def train(options: ESDConfig):
             options for the experiment
     """
     # Initialize the weights and biases logger
+    wandb.init(project="CS175", name=options.wandb_run_name, config=options.__dict__)
 
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
     # make sure to prepare_data in case the data has not been preprocessed
-    
+    esd_dm = ESDDataModule(options.processed_dir, options.raw_dir, options.selected_bands, options.tile_size_gt, options.batch_size, options.seed)
+    esd_dm.prepare_data()
+
     # create a dictionary with the parameters to pass to the models
+    params = options.__dict__
 
     # initialize the ESDSegmentation module
+    esd_segmentation = ESDSegmentation(options.model_type, options.in_channels, options.out_channels, options.learning_rate, params)
 
     # Use the following callbacks, they're provided for you,
     # but you may change some of the settings
-    # ModelCheckpoint: saves intermediate results for the neural network
-    # in case it crashes
+    # ModelCheckpoint: saves intermediate results for the neural network in case it crashes
     # LearningRateMonitor: logs the current learning rate on weights and biases
     # RichProgressBar: nicer looking progress bar (requires the rich package)
     # RichModelSummary: shows a summary of the model before training (requires rich)
@@ -95,8 +99,12 @@ def train(options: ESDConfig):
     # see pytorch_lightning.Trainer
     # make sure to use the options object to load it with the correct options
 
+    trainer = pl.Trainer()
+
     # run trainer.fit
     # make sure to use the datamodule option
+    trainer.fit(esd_segmentation, esd_dm)
+
     raise NotImplementedError
 
 
