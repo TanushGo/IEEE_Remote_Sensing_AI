@@ -59,6 +59,7 @@ def train(options: ESDConfig):
             options for the experiment
     """
     # Initialize the weights and biases logger
+    
 
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
