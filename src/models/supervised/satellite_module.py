@@ -8,11 +8,13 @@ from src.models.supervised.segmentation_cnn import SegmentationCNN
 from src.models.supervised.unet import UNet
 from src.models.supervised.resnet_transfer import FCNResnetTransfer
 
+
 class ESDSegmentation(pl.LightningModule):
     """
     LightningModule for training a segmentation model on the ESD dataset
     """
-    def __init__(self, model_type, in_channels, out_channels, 
+
+    def __init__(self, model_type, in_channels, out_channels,
                  learning_rate=1e-3, model_params: dict = {}):
         """
         Initializes the model with the given parameters.
@@ -30,14 +32,28 @@ class ESDSegmentation(pl.LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
-        
+        self.learning_rate = learning_rate
+
+        if model_type == "UNet":
+            self.model = UNet(in_channels, out_channels, **model_params)
+        elif model_type == "SegmentationCNN":
+            self.model = SegmentationCNN(in_channels, out_channels, **model_params)
+        elif model_type == "FCNResnetTransfer":
+            self.model = FCNResnetTransfer(in_channels, out_channels, **model_params)
+
         # define performance metrics for segmentation task
         # such as accuracy per class accuracy, average IoU, per class IoU,
         # per class AUC, average AUC, per class F1 score, average F1 score
         # these metrics will be logged to weights and biases
-       
-        raise NotImplementedError
-    
+
+        self.APC_acc = 0
+        self.avg_IoU = 0
+        self.IoUPC = 0
+        self.avg_AUC = 0
+        self.AUCPC = 0
+        self.F1PC = 0
+        self.avg_F1 = 0
+
     def forward(self, X):
         """
         Run the input X through the model
@@ -46,7 +62,7 @@ class ESDSegmentation(pl.LightningModule):
         Ouputs: y, a (batch, output_channels, width/scale_factor, height/scale_factor) image
         """
         raise NotImplementedError
-    
+
     def training_step(self, batch, batch_idx):
         """
         Gets the current batch, which is a tuple of
@@ -87,8 +103,7 @@ class ESDSegmentation(pl.LightningModule):
             Gradients will not propagate unless the tensor is a scalar tensor.
         """
         raise NotImplementedError
-    
-    
+
     def validation_step(self, batch, batch_idx):
         """
         Gets the current batch, which is a tuple of
@@ -121,7 +136,7 @@ class ESDSegmentation(pl.LightningModule):
             Gradients will not propagate unless the tensor is a scalar tensor.
         """
         raise NotImplementedError
-    
+
     def configure_optimizers(self):
         """
         Loads and configures the optimizer. See torch.optim.Adam

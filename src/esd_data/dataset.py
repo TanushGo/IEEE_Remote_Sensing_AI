@@ -182,13 +182,16 @@ class DSE(Dataset):
             sat: self.__aggregate_time(data)
             for sat, data in selected_satellite_stack.items()
         }
-        
+
         if "gt" in aggregated_data:
             y = aggregated_data.pop("gt")
         else:
             y = subtile.satellite_stack["gt"].squeeze(0)
         X = np.concatenate(list(aggregated_data.values()), axis=0)
-        
+
+        # change made here
+        y = y-1
+
         if self.transform is not None:
             run_dict= self.transform({"X":X,"y":y})
             X = run_dict["X"]
