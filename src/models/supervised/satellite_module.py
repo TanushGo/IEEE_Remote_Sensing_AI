@@ -46,13 +46,16 @@ class ESDSegmentation(pl.LightningModule):
         # per class AUC, average AUC, per class F1 score, average F1 score
         # these metrics will be logged to weights and biases
 
-        self.APC_acc = 0
-        self.avg_IoU = 0
-        self.IoUPC = 0
-        self.avg_AUC = 0
-        self.AUCPC = 0
-        self.F1PC = 0
-        self.avg_F1 = 0
+        # not sure if iou is correct
+
+        self.acc = torchmetrics.Accuracy(num_classes=out_channels)
+        # self.iou = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='none')
+        self.f1 = torchmetrics.F1Score(num_classes=out_channels, average='none')
+        self.auroc = torchmetrics.AUROC(num_classes=out_channels, average='none')
+
+        # self.avg_IoU = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='macro')
+        self.avg_AUC = torchmetrics.AUROC(num_classes=out_channels, average='macro')
+        self.avg_F1 = torchmetrics.F1Score(num_classes=out_channels, average='macro')
 
     def forward(self, X):
         """
@@ -61,7 +64,7 @@ class ESDSegmentation(pl.LightningModule):
         Input: X, a (batch, input_channels, width, height) image
         Ouputs: y, a (batch, output_channels, width/scale_factor, height/scale_factor) image
         """
-        raise NotImplementedError
+        return self.model.forward(X)
 
     def training_step(self, batch, batch_idx):
         """
