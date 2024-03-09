@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet50
 from torch.nn.functional import relu, pad
+from collections import deque
 
 class DoubleConvHelper(nn.Module):
     def __init__(self, in_channels, out_channels, mid_channels=None):
@@ -23,30 +24,45 @@ class DoubleConvHelper(nn.Module):
             mid_channels (int): number of channels to use in the intermediate layer    
         """
         super().__init__()
-        raise NotImplementedError
+        mid_channels = out_channels if mid_channels is None else mid_channels
+        layers = [
+            nn.Conv2d(in_channels, mid_channels, 3, padding=1, bias=False),
+            nn.BatchNorm2d(mid_channels),
+            nn.ReLU(),
+            nn.Conv2d(mid_channels, out_channels, 1),
+            nn.BatchNorm2d(out_channels),
+        ]
+        self.model = nn.Sequential(*layers)
+        
+
 
 
     def forward(self, x):
         """Forward pass through the layers of the helper block"""
-        raise NotImplementedError
+        return self.model.forward(x)
+
 
 
 class Encoder(nn.Module):
     """ Downscale using the maxpool then call double conv helper. """
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        raise NotImplementedError
+        self.maxpool_conv = nn.Sequential(
+            nn.MaxPool2d(2),
+            DoubleConvHelper(in_channels, out_channels)
+        )
 
 
     def forward(self, x):
-        raise NotImplementedError
+        return self.maxpool_conv(x)
 
 
 class Decoder(nn.Module):
     """ Upscale using ConvTranspose2d then call double conv helper. """
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        raise NotImplementedError
+        self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
+        self.conv = DoubleConvHelper(in_channels, out_channels)
     
     def forward(self, x1, x2):
         """ 
@@ -59,7 +75,7 @@ class Decoder(nn.Module):
         7) Return output
         """
         # step 1: replace x1 with the upsampled version of x1
-
+        x1 = self.up(x1)
         # input is Channel Height Width, step 2
         diffY = x2.size()[2] - x1.size()[2]
         diffX = x2.size()[3] - x1.size()[3]
@@ -72,12 +88,13 @@ class Decoder(nn.Module):
         # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
         
         # step 4 & 5: Concatenate x1 and x2
+        x = torch.cat([x2, x1], dim=1)
+        
 
         # step 6: Pass the concatenated tensor through a doubleconvhelper
-    
-
+        
         # step 7: return output
-        raise NotImplementedError
+        return self.conv(x)
     
 class UNet(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, n_encoders: int = 2,
@@ -121,7 +138,26 @@ class UNet(nn.Module):
             then the scale factor is 800/16 = 50.
         """
         super(UNet, self).__init__()
-        raise NotImplementedError
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.inc = (DoubleConvHelper(in_channels, embedding_size))
+        self.encoders = []
+        size = embedding_size
+        for i in range(n_encoders):
+            self.encoders.append(Encoder(size,size*2))
+            size=size*2
+
+        self.decoders = []
+        for i in range(n_encoders):
+            if(i == n_encoders-1):
+                self.decoders.append(Decoder(size,out_channels))
+                break
+            self.decoders.append(Decoder(size,size/2))
+            size=size/2
+
+    
+        self.outc =nn.MaxPool2d(kernel_size=(scale_factor,scale_factor))
 
 
     def forward(self, x):
@@ -139,5 +175,22 @@ class UNet(nn.Module):
             (batch, some_embedding_size//2, 2*some_width, 2*some_height)
             as the residual.
         """
-        raise NotImplementedError
+        inc_list = deque()
+        x = self.inc(x)
+        inc_list.appendleft(x)
+        for encoder in self.encoders:
+            x = encoder(x)
+            inc_list.appendleft(x)
+
+        resid = None
+        for decoder in self.decoders:
+            if resid is None:
+                x = inc_list.popleft()
+                
+            resid = inc_list.popleft()
+                
+            x = decoder(x,resid)
+            
+        logits = self.outc(x)
+        return logits
 
