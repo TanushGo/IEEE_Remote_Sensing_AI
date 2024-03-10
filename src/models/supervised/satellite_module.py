@@ -149,4 +149,4 @@ class ESDSegmentation(pl.LightningModule):
             optimizer: torch.optim.Optimizer
                 Optimizer used to minimize the loss
         """
-        raise NotImplementedError
+        return Adam(self.model_params, lr=self.learning_rate)

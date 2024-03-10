@@ -52,7 +52,7 @@ class Encoder(nn.Module):
             img: output image of shape
             (batch, out_channels, width//pool_size, height//pool_size)
         """
-        out_img = self.conv(img)
+        out_img = self.convs(img)
         pooled_img = self.pool(out_img)
 
         return pooled_img
