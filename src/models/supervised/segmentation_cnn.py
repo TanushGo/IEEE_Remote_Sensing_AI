@@ -3,6 +3,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 from typing import List
 
+
 class Encoder(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, depth: int, kernel_size: int, pool_size: int):
         """
@@ -25,8 +26,19 @@ class Encoder(nn.Module):
             pool_size: size of the kernel of the pooling layer
         """
         super(Encoder, self).__init__()
-        raise NotImplementedError
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
+        convs = [nn.Conv2d(in_channels, out_channels, kernel_size=[kernel_size, kernel_size],
+                           padding=kernel_size // 2), nn.ReLU()]
+
+        for i in range(depth - 1):
+            convs.append(nn.Conv2d(out_channels, out_channels, kernel_size=[kernel_size, kernel_size],
+                                   padding=kernel_size // 2))
+            convs.append(nn.ReLU())
+
+        self.convs = nn.Sequential(*convs)
+        self.pool = nn.MaxPool2d
 
     def forward(self, img):
         """
@@ -40,11 +52,15 @@ class Encoder(nn.Module):
             img: output image of shape
             (batch, out_channels, width//pool_size, height//pool_size)
         """
-        raise NotImplementedError
+        out_img = self.conv(img)
+        pooled_img = self.pool(out_img)
+
+        return pooled_img
+
 
 class SegmentationCNN(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int,  depth: int = 2, embedding_size: int = 64,
-                 pool_sizes: List[int] = [5,5,2], kernel_size: int = 3, **kwargs):
+    def __init__(self, in_channels: int, out_channels: int, depth: int = 2, embedding_size: int = 64,
+                 pool_sizes: List[int] = [5, 5, 2], kernel_size: int = 3, **kwargs):
         """
         Basic CNN that performs segmentation. This model takes
         an image of shape (batch, in_channels, width, height)
@@ -82,8 +98,21 @@ class SegmentationCNN(nn.Module):
             pool_sizes: list of pool sizes for each encoder
             kernel_size: size of the kernel of the convolutional layers
         """
+
+        # remember to turn list into ModuleList before passing to conv2d
+
         super(SegmentationCNN, self).__init__()
-        raise NotImplementedError
+        em_size = embedding_size
+        encoders = [Encoder(in_channels, em_size, depth, kernel_size, pool_sizes[0])]
+
+        for i in range(1, len(pool_sizes)):
+            encoders.append(Encoder(em_size, em_size * 2, depth, kernel_size, pool_sizes[i]))
+            em_size *= 2
+
+        # final decoder layer
+        encoders.append(Encoder(embedding_size * (2 ** (len(pool_sizes))), out_channels, depth, 1, 1))
+
+        self.encoders = nn.ModuleList(encoders)
 
     def forward(self, X):
         """
@@ -95,4 +124,8 @@ class SegmentationCNN(nn.Module):
             y_pred: image of shape
             (batch, out_channels, width//prod(pool_sizes), height//prod(pool_sizes))
         """
-        raise NotImplementedError
+        img = X
+        for enc in self.encoders:
+            img = enc(img)
+
+        return img
