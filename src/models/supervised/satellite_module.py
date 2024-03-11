@@ -37,7 +37,7 @@ class ESDSegmentation(pl.LightningModule):
         if model_type == "UNet":
             self.model = UNet(in_channels, out_channels, **model_params)
         elif model_type == "SegmentationCNN":
-            self.model = SegmentationCNN(in_channels, out_channels, **model_params)
+            self.model = SegmentationCNN(**model_params)
         elif model_type == "FCNResnetTransfer":
             self.model = FCNResnetTransfer(in_channels, out_channels, **model_params)
 
@@ -48,14 +48,14 @@ class ESDSegmentation(pl.LightningModule):
 
         # not sure if iou is correct
 
-        self.acc = torchmetrics.Accuracy(num_classes=out_channels)
+        self.acc = torchmetrics.Accuracy(task='binary', num_classes=out_channels)
         # self.iou = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='none')
-        self.f1 = torchmetrics.F1Score(num_classes=out_channels, average='none')
-        self.auroc = torchmetrics.AUROC(num_classes=out_channels, average='none')
+        self.f1 = torchmetrics.F1Score(task='binary', num_classes=out_channels, average='none')
+        self.auroc = torchmetrics.AUROC(task='binary', num_classes=out_channels, average='none')
 
         # self.avg_IoU = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='macro')
-        self.avg_AUC = torchmetrics.AUROC(num_classes=out_channels, average='macro')
-        self.avg_F1 = torchmetrics.F1Score(num_classes=out_channels, average='macro')
+        self.avg_AUC = torchmetrics.AUROC(task='binary', num_classes=out_channels, average='macro')
+        self.avg_F1 = torchmetrics.F1Score(task='binary', num_classes=out_channels, average='macro')
 
     def forward(self, X):
         """

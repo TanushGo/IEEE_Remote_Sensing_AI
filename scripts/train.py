@@ -3,6 +3,7 @@ import sys
 root = pyprojroot.here()
 sys.path.append(str(root))
 import pytorch_lightning as pl
+import torch
 from argparse import ArgumentParser
 import os
 from typing import List
@@ -99,13 +100,14 @@ def train(options: ESDConfig):
     # see pytorch_lightning.Trainer
     # make sure to use the options object to load it with the correct options
 
-    trainer = pl.Trainer()
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs)
 
     # run trainer.fit
     # make sure to use the datamodule option
-    trainer.fit(esd_segmentation, esd_dm)
+    trainer.fit(esd_segmentation, datamodule=esd_dm)
 
-    raise NotImplementedError
+    # raise NotImplementedError
 
 
 if __name__ == '__main__':
