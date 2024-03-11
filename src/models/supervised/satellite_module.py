@@ -105,7 +105,15 @@ class ESDSegmentation(pl.LightningModule):
             train_loss: torch.tensor of shape (,) (i.e, a scalar tensor).
             Gradients will not propagate unless the tensor is a scalar tensor.
         """
-        raise NotImplementedError
+        sat_img, mask, _ = batch
+        sat_img, mask = sat_img.float(), mask.squeeze(1).long()
+
+        logits = self.forward(sat_img)
+        loss = nn.functional.cross_entropy(logits, mask)
+        self.log('train_loss', loss)
+
+        return loss
+
 
     def validation_step(self, batch, batch_idx):
         """
@@ -138,7 +146,21 @@ class ESDSegmentation(pl.LightningModule):
             loss that will be tracked.
             Gradients will not propagate unless the tensor is a scalar tensor.
         """
-        raise NotImplementedError
+        sat_img, mask, _ = batch
+        sat_img, mask = sat_img.float(), mask.squeeze(1).long()
+
+        logits = self.forward(sat_img)
+        loss = nn.functional.cross_entropy(logits, mask)
+        self.log('train_loss', loss)
+
+        self.acc(logits, mask)
+        self.f1(logits, mask)
+        self.auroc(logits, mask)
+
+        self.avg_AUC(logits, mask)
+        self.avg_F1(logits, mask)
+
+        return loss
 
     def configure_optimizers(self):
         """
@@ -149,4 +171,4 @@ class ESDSegmentation(pl.LightningModule):
             optimizer: torch.optim.Optimizer
                 Optimizer used to minimize the loss
         """
-        return Adam(self.model_params, lr=self.learning_rate)
+        return Adam(self.parameter(), lr=self.learning_rate)
