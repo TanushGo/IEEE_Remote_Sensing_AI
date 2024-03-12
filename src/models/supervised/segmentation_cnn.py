@@ -62,12 +62,17 @@ class Encoder(nn.Module):
             img: output image of shape
             (batch, out_channels, width//pool_size, height//pool_size)
         """
+        print(self.convs)
+        print(f"shape: {img.shape}")
         out_img = self.convs(img)
-        pooled_img = self.pool(out_img)
-
+        
         if self.decoder:
             pooled_img = out_img
+        else:
+            pooled_img = self.pool(out_img)
 
+
+        
         return pooled_img
 
 
@@ -124,11 +129,11 @@ class SegmentationCNN(nn.Module):
             em_size *= 2
 
         # final decoder layer
-        encoders.append(Encoder(embedding_size * (2 ** (len(pool_sizes))), out_channels, depth, 1, 1))
+        encoders.append(Encoder(embedding_size * (2 ** (len(pool_sizes)-1)), out_channels, depth, 1, 1))
 
         # encoders[-1].decoder = True
         self.encoders = nn.ModuleList(encoders)
-        print(f'encoders: {self.encoders}')
+        
 
     def forward(self, X):
         """
@@ -142,6 +147,7 @@ class SegmentationCNN(nn.Module):
         """
         img = X
         for enc in self.encoders:
+            
             img = enc(img)
 
         return img
