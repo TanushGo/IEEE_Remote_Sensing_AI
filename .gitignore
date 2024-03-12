@@ -14,7 +14,7 @@ esdenv
 references/*
 .vscode/*
 wandb/
-
+lightning_logs
 
 
 

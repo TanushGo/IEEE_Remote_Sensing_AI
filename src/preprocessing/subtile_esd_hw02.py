@@ -417,7 +417,8 @@ def grid_slice(
     for x in range(num_tiles_x):
         for y in range(num_tiles_y):
             # create tile
-            satellite_tiles = []
+            # satellite_tiles = []
+            satellite_tiles = {}
 
             # for every satellite type
             for sat_type in satellite_stack.keys():
@@ -432,7 +433,8 @@ def grid_slice(
                     scale_factor = satellite_stack[sat_type].shape[2] / gt_stack.shape[2]
                     slice = get_tile_satellite(satellite_stack[sat_type], x, y, tile_size_gt, scale_factor)
 
-                satellite_tiles.append(slice)
+                # satellite_tiles.append(slice)
+                satellite_tiles[sat_type] = slice
 
             # create the associated TileMetadata
             tile_metadata = metadata_to_tile_metadata(metadata_stack, x, y, tile_size_gt)

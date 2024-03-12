@@ -35,7 +35,7 @@ class ESDSegmentation(pl.LightningModule):
         self.learning_rate = learning_rate
 
         if model_type == "UNet":
-            self.model = UNet(in_channels, out_channels, **model_params)
+            self.model = UNet(**model_params)
         elif model_type == "SegmentationCNN":
             self.model = SegmentationCNN(**model_params)
         elif model_type == "FCNResnetTransfer":
@@ -151,7 +151,7 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('train_loss', loss)
+        self.log('val_loss', loss)
 
         self.acc(logits, mask)
         self.f1(logits, mask)
@@ -171,4 +171,4 @@ class ESDSegmentation(pl.LightningModule):
             optimizer: torch.optim.Optimizer
                 Optimizer used to minimize the loss
         """
-        return Adam(self.parameter(), lr=self.learning_rate)
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)

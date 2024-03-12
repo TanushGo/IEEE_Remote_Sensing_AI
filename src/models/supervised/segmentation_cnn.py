@@ -28,17 +28,27 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.decoder = False
 
-        convs = [nn.Conv2d(in_channels, out_channels, kernel_size=[kernel_size, kernel_size],
-                           padding=kernel_size // 2), nn.ReLU()]
+        if kernel_size == pool_size == 1:
+            self.decoder = True
+
+        convs = [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
+                           padding=(kernel_size // 2, kernel_size // 2)), nn.ReLU()]
 
         for i in range(depth - 1):
-            convs.append(nn.Conv2d(out_channels, out_channels, kernel_size=[kernel_size, kernel_size],
-                                   padding=kernel_size // 2))
+            convs.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
+                                   padding=(kernel_size // 2, kernel_size // 2)))
             convs.append(nn.ReLU())
 
+        if self.decoder:
+            convs = [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
+                               padding=(kernel_size // 2, kernel_size // 2)), nn.ReLU()]
+
         self.convs = nn.Sequential(*convs)
-        self.pool = nn.MaxPool2d
+        if not self.decoder:
+            self.pool = nn.MaxPool2d(kernel_size=(pool_size, pool_size))
+
 
     def forward(self, img):
         """
@@ -54,6 +64,9 @@ class Encoder(nn.Module):
         """
         out_img = self.convs(img)
         pooled_img = self.pool(out_img)
+
+        if self.decoder:
+            pooled_img = out_img
 
         return pooled_img
 
@@ -100,6 +113,7 @@ class SegmentationCNN(nn.Module):
         """
 
         # remember to turn list into ModuleList before passing to conv2d
+        pool_sizes = [5, 5, 2]
 
         super(SegmentationCNN, self).__init__()
         em_size = embedding_size
@@ -112,7 +126,9 @@ class SegmentationCNN(nn.Module):
         # final decoder layer
         encoders.append(Encoder(embedding_size * (2 ** (len(pool_sizes))), out_channels, depth, 1, 1))
 
+        # encoders[-1].decoder = True
         self.encoders = nn.ModuleList(encoders)
+        print(f'encoders: {self.encoders}')
 
     def forward(self, X):
         """

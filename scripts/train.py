@@ -48,7 +48,7 @@ class ESDConfig:
     depth: int = 2
     n_encoders: int = 2
     embedding_size: int = 64
-    pool_sizes: str = "5,5,2" # List[int] = [5,5,2]
+    pool_sizes: str = '5,5,2' # List[int] = [5,5,2]
     kernel_size: int = 3
     scale_factor: int = 50
     wandb_run_name: str | None = None
@@ -104,14 +104,14 @@ def train(options: ESDConfig):
     # see pytorch_lightning.Trainer
     # make sure to use the options object to load it with the correct options
 
-    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb)
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    # First trainer for GPU usage, second for without
+    torch.set_float32_matmul_precision('medium')
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs)
 
     # run trainer.fit
     # make sure to use the datamodule option
     trainer.fit(esd_segmentation, datamodule=esd_dm)
-
-    # raise NotImplementedError
 
 
 if __name__ == '__main__':
