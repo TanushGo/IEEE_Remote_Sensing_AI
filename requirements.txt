@@ -13,3 +13,4 @@ torch
 torchvision
 lightning
 rich
+wandb
