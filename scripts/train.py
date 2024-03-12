@@ -21,6 +21,9 @@ from src.esd_data.datamodule import ESDDataModule
 from src.models.supervised.satellite_module import ESDSegmentation
 
 import wandb
+from lightning.pytorch.loggers import WandbLogger
+
+
 @dataclass
 class ESDConfig:
     """
@@ -61,6 +64,7 @@ def train(options: ESDConfig):
     """
     # Initialize the weights and biases logger
     wandb.init(project="CS175", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = WandbLogger(project="CS175")
 
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
@@ -101,7 +105,7 @@ def train(options: ESDConfig):
     # make sure to use the options object to load it with the correct options
 
     # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb)
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option

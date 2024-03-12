@@ -86,6 +86,7 @@ class ESDDataModule(pl.LightningDataModule):
         self.tile_size_gt = tile_size_gt
         self.batch_size = batch_size
         self.seed = seed
+        self.prepare_data_per_node = False
 
         torch.manual_seed(seed)
 
