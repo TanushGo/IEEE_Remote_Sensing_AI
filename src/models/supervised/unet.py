@@ -183,22 +183,15 @@ class UNet(nn.Module):
         # if torch.cuda.is_available():
         #     x = x.cuda()
 
-        inc_list = deque()
         x = self.inc(x)
-        inc_list.appendleft(x)
-        for encoder in self.encoders:
-            x = encoder(x)
-            inc_list.appendleft(x)
+        residuals = [x]
+        for i, enc in enumerate(self.encoders):
+            residuals.append(enc(residuals[-1]))
+        
+        x = residuals[-1]
+        for i,(dec,res) in enumerate(zip(self.decoders,reversed(residuals[:-1]))):
+            x = dec(x,res)
 
-        resid = None
-        for decoder in self.decoders:
-            if resid is None:
-                x = inc_list.popleft()
-                
-            resid = inc_list.popleft()
-                
-            x = decoder(x,resid)
-            
-        logits = self.outc(x)
-        return logits
+        x = self.outc(x)
+        return x
 
