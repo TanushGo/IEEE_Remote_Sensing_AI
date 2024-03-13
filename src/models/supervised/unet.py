@@ -183,6 +183,13 @@ class UNet(nn.Module):
         # if torch.cuda.is_available():
         #     x = x.cuda()
 
+        print(f'x1 type is {type(x)}')
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+            x = x.to(device)
+            # x = x.to(torch.device('cuda'), dtype=torch.float32)
+            print(f'x2 type is {type(x)}')
+
         inc_list = deque()
         x = self.inc(x)
         inc_list.appendleft(x)
