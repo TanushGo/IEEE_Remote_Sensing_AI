@@ -40,7 +40,7 @@ class ESDConfig:
     batch_size: int = 8
     max_epochs: int = 2
     seed: int = 12378921
-    learning_rate: float = 1e-5
+    learning_rate: float = 1e-3
     num_workers: int = 11
     accelerator: str = "gpu"
     devices: int = 1
@@ -113,8 +113,8 @@ def train(options: ESDConfig):
 
     # First trainer for GPU usage, second for without
     torch.set_float32_matmul_precision('medium')
-    #trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option
