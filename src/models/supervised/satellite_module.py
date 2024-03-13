@@ -151,7 +151,7 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('val/loss', loss)
+        self.log('val/loss', loss, batch_size=logits[0])
 
         self.acc(logits, mask)
         self.f1(logits, mask)
