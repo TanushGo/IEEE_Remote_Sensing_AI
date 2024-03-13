@@ -110,7 +110,7 @@ class ESDSegmentation(pl.LightningModule):
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
         
-        self.log('train_loss', loss)
+        self.log('core_values/train_loss', loss)
 
         return loss
 
@@ -151,7 +151,7 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('val_loss', loss)
+        self.log('core_values/val_loss', loss)
 
 
         acc = self.acc(logits, mask)
@@ -164,10 +164,10 @@ class ESDSegmentation(pl.LightningModule):
             self.log(f'train_f1_class_{i}', f1[i])
             self.log(f'train_auroc_class_{i}', auroc[i])
 
-        self.log('average ACC', self.avg_ACC(logits, mask))
-        self.log('average IoU', self.avg_IoU(logits, mask))
-        self.log('average AUROC', self.avg_AUC(logits, mask))
-        self.log('average F-1', self.avg_F1(logits, mask))
+        self.log('core_values/average ACC', self.avg_ACC(logits, mask))
+        self.log('core_values/average IoU', self.avg_IoU(logits, mask))
+        self.log('core_values/average AUROC', self.avg_AUC(logits, mask))
+        self.log('core_values/average F-1', self.avg_F1(logits, mask))
 
         return loss
 
