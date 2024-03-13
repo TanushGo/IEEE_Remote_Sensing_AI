@@ -48,14 +48,14 @@ class ESDSegmentation(pl.LightningModule):
 
         # not sure if iou is correct
 
-        self.acc = torchmetrics.Accuracy(task='binary', num_classes=out_channels)
+        self.acc = torchmetrics.Accuracy(task='multiclass', num_classes=out_channels)
         # self.iou = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='none')
-        self.f1 = torchmetrics.F1Score(task='binary', num_classes=out_channels, average='none')
-        self.auroc = torchmetrics.AUROC(task='binary', num_classes=out_channels, average='none')
+        self.f1 = torchmetrics.F1Score(task='multiclass', num_classes=out_channels, average='none')
+        self.auroc = torchmetrics.AUROC(task='multiclass', num_classes=out_channels, average='none')
 
         # self.avg_IoU = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='macro')
-        self.avg_AUC = torchmetrics.AUROC(task='binary', num_classes=out_channels, average='macro')
-        self.avg_F1 = torchmetrics.F1Score(task='binary', num_classes=out_channels, average='macro')
+        self.avg_AUC = torchmetrics.AUROC(task='multiclass', num_classes=out_channels, average='macro')
+        self.avg_F1 = torchmetrics.F1Score(task='multiclass', num_classes=out_channels, average='macro')
 
     def forward(self, X):
         """
@@ -147,11 +147,14 @@ class ESDSegmentation(pl.LightningModule):
             Gradients will not propagate unless the tensor is a scalar tensor.
         """
         sat_img, mask, _ = batch
+        
         sat_img, mask = sat_img.float(), mask.squeeze(1).long()
-
+        # print("mask",mask.shape)
         logits = self.forward(sat_img)
+        logits = logits.squeeze(1)
+        # print("logits",logits.shape)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('val_loss', loss)
+        self.log('val_loss', loss, batch_size=logits.shape[0]) #Changed
 
         self.acc(logits, mask)
         self.f1(logits, mask)

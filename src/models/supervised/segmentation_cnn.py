@@ -62,8 +62,8 @@ class Encoder(nn.Module):
             img: output image of shape
             (batch, out_channels, width//pool_size, height//pool_size)
         """
-        print(self.convs)
-        print(f"shape: {img.shape}")
+        # print(self.convs)
+        # print(f"shape: {img.shape}")
         out_img = self.convs(img)
         
         if self.decoder:
