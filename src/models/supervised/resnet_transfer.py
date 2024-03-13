@@ -55,4 +55,5 @@ class FCNResnetTransfer(nn.Module):
             (batch, self.output_channels, width//self.scale_factor, height//self.scale_factor)
         """
         # Be careful of the output data structure of model you loaded (e.g. dict, tuple, etc.)
-        return self.pool(self.model.forward(x))
+        y = self.model.forward(x)
+        return self.pool(y["out"])
