@@ -110,7 +110,7 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('train_loss', loss)
+        self.log('train/loss', loss)
 
         return loss
 
@@ -147,14 +147,11 @@ class ESDSegmentation(pl.LightningModule):
             Gradients will not propagate unless the tensor is a scalar tensor.
         """
         sat_img, mask, _ = batch
-        
         sat_img, mask = sat_img.float(), mask.squeeze(1).long()
-        # print("mask",mask.shape)
+
         logits = self.forward(sat_img)
-        logits = logits.squeeze(1)
-        # print("logits",logits.shape)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('val_loss', loss, batch_size=logits.shape[0]) #Changed
+        self.log('val/loss', loss)
 
         self.acc(logits, mask)
         self.f1(logits, mask)
