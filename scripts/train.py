@@ -24,6 +24,8 @@ import wandb
 from lightning.pytorch.loggers import WandbLogger
 
 torch.set_default_dtype(torch.float32)
+if torch.cuda.is_available():
+    torch.set_default_device('cuda')
 
 @dataclass
 class ESDConfig:
@@ -54,7 +56,6 @@ class ESDConfig:
     scale_factor: int = 50
     wandb_run_name: str | None = None
 
-#[0.00025, 0.00030, 0.00035, 0.00040, .01]
 def train(options: ESDConfig):
     """
     Prepares datamodule and model, then runs the training loop
@@ -67,11 +68,11 @@ def train(options: ESDConfig):
     # wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = WandbLogger(project="CNN")
 
-    wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = WandbLogger(project="FCNR")
+    # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
+    # wandb_logger = WandbLogger(project="FCNR")
 
-    # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="UNET")
+    wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = WandbLogger(project="UNET")
     
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
@@ -113,8 +114,8 @@ def train(options: ESDConfig):
 
     # First trainer for GPU usage, second for without
     torch.set_float32_matmul_precision('medium')
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
-    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option

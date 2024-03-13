@@ -245,8 +245,9 @@ class ToTensor(object):
                     Has two keys, 'X' and 'y'.
                     Each of them has shape (bands, width, height)
         """
-        new_X = torch.from_numpy(sample["X"])
-        new_y = torch.from_numpy(sample["y"])
+   
+        new_X = torch.as_tensor(sample["X"])
+        new_y = torch.as_tensor(sample["y"])
 
         transformed = {"X": new_X, "y": new_y}
 

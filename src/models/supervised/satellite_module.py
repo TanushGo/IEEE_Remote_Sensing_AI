@@ -46,7 +46,6 @@ class ESDSegmentation(pl.LightningModule):
         # per class AUC, average AUC, per class F1 score, average F1 score
         # these metrics will be logged to weights and biases
 
-
         self.acc = torchmetrics.classification.MulticlassAccuracy(num_classes=out_channels, average='none')
         self.iou = torchmetrics.classification.MulticlassJaccardIndex(num_classes=out_channels, average='none')
         self.f1 = torchmetrics.classification.MulticlassF1Score(num_classes=out_channels, average='none')
