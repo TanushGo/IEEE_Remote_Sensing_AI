@@ -35,12 +35,12 @@ class ESDConfig:
     processed_dir: str | os.PathLike = root / 'data/processed/4x4'
     raw_dir: str | os.PathLike = root / 'data/raw/Train'
     selected_bands: None = None
-    model_type: str = "UNet"
+    model_type: str = "FCNResnetTransfer"
     tile_size_gt: int = 4
     batch_size: int = 8
     max_epochs: int = 2
     seed: int = 12378921
-    learning_rate: float = 1e-3
+    learning_rate: float = 0.00030
     num_workers: int = 11
     accelerator: str = "gpu"
     devices: int = 1
@@ -54,7 +54,7 @@ class ESDConfig:
     scale_factor: int = 50
     wandb_run_name: str | None = None
 
-
+#[0.00025, 0.00030, 0.00035, 0.00040, .01]
 def train(options: ESDConfig):
     """
     Prepares datamodule and model, then runs the training loop

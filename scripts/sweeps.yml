@@ -1,1 +1,13 @@
-# please use this file to define the parameters for the sweep you would like to run
+program: train.py
+name: FCNR
+method: bayes
+metric:
+  name: val_loss
+  goal: minimize
+parameters:
+  learning_rate:
+    values: [0.00025, 0.00030, 0.00035, 0.00040, .01]
+  batch_size:
+    values: [4, 8, 16]
+  max_epochs:
+    values: [3]
