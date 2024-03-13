@@ -50,7 +50,6 @@ def main(options):
         options: EvalConfig
             options for the experiment
     """
-    # Load datamodule
     datamodule = ESDDataModule(
         processed_dir=options.processed_dir,
         raw_dir=options.raw_dir,
@@ -58,108 +57,73 @@ def main(options):
         tile_size_gt=options.tile_size_gt,
         batch_size=options.batch_size,
         seed=options.seed,
+        num_workers=options.num_workers,
     )
+    datamodule.prepare_data()
+    datamodule.setup(stage="fit")
 
-    # load model from checkpoint at options.model_path
-    datamodule.setup("test")
     model = ESDSegmentation.load_from_checkpoint(checkpoint_path=options.model_path)
-
-    # set the model to evaluation mode (model.eval())
     model.eval()
 
-    # this is important because if you don't do this, some layers
-    # will not evaluate properly
-
-    # instantiate pytorch lightning trainer
-    # Instantiate PyTorch Lightning trainer
     trainer = pl.Trainer(
         callbacks=[
             LearningRateMonitor(),
-            ModelCheckpoint(dirpath=options.results_dir, save_top_k=1),
+            ModelCheckpoint(monitor="val_loss"),
             RichProgressBar(),
             RichModelSummary(),
         ],
-        gpus=1 if torch.cuda.is_available() else 0,
+        logger=False,  # Disable logging to avoid unnecessary output
     )
 
-    # run the validation loop with trainer.validate
-    # Run the validation loop with trainer.validate
     trainer.validate(model, datamodule=datamodule)
 
-    # run restitch_and_plot
+    # Assuming a method to get validation tile IDs from the datamodule
+    val_tile_ids = datamodule.get_val_tile_ids()
 
-    # for every subtile in options.processed_dir/Val/subtiles
-    val_dir = Path(options.processed_dir) / "Val" / "subtiles"
-    results_dir = Path(options.results_dir)
-    results_dir.mkdir(parents=True, exist_ok=True)
-    # run restitch_eval on that tile followed by picking the best scoring class
-    # save the file as a tiff using tifffile
-    # save the file as a png using matplotlib
-    # tiles = ...
-    for parent_tile_id in val_dir.glob("*"):
-        satellite_type = "sentinel2"  # Example, adjust based on your use case
-        rgb_bands = [3, 2, 1]  # Adjust based on your satellite type
-
-        # Running restitch_and_plot for visualization
+    for parent_tile_id in val_tile_ids:
+        # Use restitch_and_plot for visualization
         restitch_and_plot(
             options,
             datamodule,
             model,
-            parent_tile_id.stem,
-            satellite_type,
-            rgb_bands,
-            image_dir=results_dir,
+            parent_tile_id,
+            satellite_type="sentinel2",
+            rgb_bands=[3, 2, 1],
+            image_dir=options.results_dir,
         )
 
-        # Assuming the structure for the evaluation includes retrieving range_x and range_y dynamically
-        range_x, range_y = (0, 5), (
-            0,
-            5,
-        )  # Example ranges, adjust based on your actual data
-
-        # Running restitch_eval for evaluation
-        stitched_image, stitched_gt, stitched_pred = restitch_eval(
-            dir=val_dir,
-            satellite_type=satellite_type,
-            tile_id=parent_tile_id.stem,
-            range_x=range_x,
-            range_y=range_y,
-            datamodule=datamodule,
-            model=model,
+        stitched_image, stitched_ground_truth, stitched_predictions, metadata = (
+            restitch_eval(
+                dir=options.processed_dir,
+                satellite_type="sentinel2",
+                tile_id=parent_tile_id,
+                range_x=(0, 5),  # Example ranges, adjust as necessary
+                range_y=(0, 5),
+                datamodule=datamodule,
+                model=model,
+            )
         )
 
-        # Saving the predicted image as TIFF
+        # Save predictions as TIFF
         tifffile.imwrite(
-            results_dir / f"{parent_tile_id.stem}_prediction.tif", stitched_pred
+            Path(options.results_dir) / f"{parent_tile_id}_prediction.tif",
+            stitched_predictions,
         )
 
-        # Plotting and saving the predicted image as PNG
+        # Plot and save predictions as PNG
         cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
-            "Settlements", np.array(["#ff0000", "#0000ff", "#ffff00", "#b266ff"]), N=4
+            "Settlements", ["#ff0000", "#0000ff", "#ffff00", "#b266ff"], N=4
         )
-        plt.imshow(stitched_pred, vmin=-0.5, vmax=3.5, cmap=cmap)
-        plt.axis("off")
-        plt.savefig(
-            results_dir / f"{parent_tile_id.stem}_prediction.png",
-            bbox_inches="tight",
-            pad_inches=0,
-        )
-        plt.close()
-
-    """
-    for parent_tile_id in tiles:
-
-        # freebie: plots the predicted image as a jpeg with the correct colors
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
-            "Settlements", np.array(["#ff0000", "#0000ff", "#ffff00", "#b266ff"]), N=4
-        )
-        fig, ax = plt.subplots(nrows=1, ncols=1)
-        ax.imshow(y_pred, vmin=-0.5, vmax=3.5, cmap=cmap)
-        plt.savefig(options.results_dir / f"{parent_tile_id}.png")
-    """
+        fig, ax = plt.subplots()
+        ax.imshow(stitched_predictions, vmin=-0.5, vmax=3.5, cmap=cmap)
+        plt.savefig(Path(options.results_dir) / f"{parent_tile_id}_prediction.png")
+        plt.close(fig)
 
 
 if __name__ == "__main__":
+    root = pyprojroot.here()
+    sys.path.append(str(root))
+
     config = EvalConfig()
     parser = ArgumentParser()
 
@@ -170,9 +134,15 @@ if __name__ == "__main__":
         "--raw_dir", type=str, default=config.raw_dir, help="Path to raw directory"
     )
     parser.add_argument(
-        "-p", "--processed_dir", type=str, default=config.processed_dir, help="."
+        "-p",
+        "--processed_dir",
+        type=str,
+        default=config.processed_dir,
+        help="Path to processed directory",
     )
     parser.add_argument(
-        "--results_dir", type=str, default=config.results_dir, help="Results dir"
+        "--results_dir", type=str, default=config.results_dir, help="Results directory"
     )
-    main(EvalConfig(**parser.parse_args().__dict__))
+
+    args = parser.parse_args()
+    main(EvalConfig(**vars(args)))

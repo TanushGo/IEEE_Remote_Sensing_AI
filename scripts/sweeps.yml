@@ -1,1 +1,16 @@
-# please use this file to define the parameters for the sweep you would like to run
+program: train.py
+name: FCNR
+method: bayes
+metric:
+  name: average ACC
+  goal: maximize
+  target: 0.85
+parameters:
+  learning_rate:
+    min: 0.00001
+    max: 0.1
+    distribution: log_uniform_values
+  batch_size:
+    values: [2, 4, 6, 8, 10, 12]
+  max_epochs:
+    values: [4, 6, 8, 10]

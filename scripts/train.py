@@ -35,12 +35,12 @@ class ESDConfig:
     processed_dir: str | os.PathLike = root / 'data/processed/4x4'
     raw_dir: str | os.PathLike = root / 'data/raw/Train'
     selected_bands: None = None
-    model_type: str = "UNet"
+    model_type: str = "FCNResnetTransfer"
     tile_size_gt: int = 4
     batch_size: int = 8
     max_epochs: int = 2
     seed: int = 12378921
-    learning_rate: float = 1e-3
+    learning_rate: float = 0.00030
     num_workers: int = 11
     accelerator: str = "gpu"
     devices: int = 1
@@ -54,7 +54,7 @@ class ESDConfig:
     scale_factor: int = 50
     wandb_run_name: str | None = None
 
-
+#[0.00025, 0.00030, 0.00035, 0.00040, .01]
 def train(options: ESDConfig):
     """
     Prepares datamodule and model, then runs the training loop
@@ -134,7 +134,8 @@ if __name__ == '__main__':
     parser.add_argument("--raw_dir", type=str, default=config.raw_dir, help='Path to raw directory')
     parser.add_argument("-p", "--processed_dir", type=str, default=config.processed_dir,
                         help=".")
-    
+    parser.add_argument('--batch_size', help="Batch size to train in", type=int, default=config.batch_size)
+
     parser.add_argument('--in_channels', type=int, default=config.in_channels, help='Number of input channels')
     parser.add_argument('--out_channels', type=int, default=config.out_channels, help='Number of output channels')
     parser.add_argument('--depth', type=int, help="Depth of the encoders (CNN only)", default=config.depth)
@@ -143,6 +144,7 @@ if __name__ == '__main__':
     parser.add_argument('--pool_sizes', help="A comma separated list of pool_sizes (CNN only)", type=str, default=config.pool_sizes)
     parser.add_argument('--kernel_size', help="Kernel size of the convolutions", type=int, default=config.kernel_size)
     parser.add_argument('--scale_factor', help="Scale factor between the labels and the image (Unet and Transfer Resnet)", type=int, default=config.scale_factor)
+
     # --pool_sizes=5,5,2 to call it correctly
     
     parse_args = parser.parse_args()

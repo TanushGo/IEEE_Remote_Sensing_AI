@@ -52,9 +52,10 @@ class ESDSegmentation(pl.LightningModule):
         self.f1 = torchmetrics.classification.MulticlassF1Score(num_classes=out_channels, average='none')
         self.auroc = torchmetrics.classification.MulticlassAUROC(num_classes=out_channels, average='none')
 
-        self.avg_IoU = torchmetrics.classification.JaccardIndex(task='multiclass', num_classes=out_channels, average='macro')
-        self.avg_AUC = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='macro')
-        self.avg_F1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='macro')
+        self.avg_ACC = torchmetrics.classification.Accuracy(task='multiclass', num_classes=out_channels, average='weighted')
+        self.avg_IoU = torchmetrics.classification.JaccardIndex(task='multiclass', num_classes=out_channels, average='weighted')
+        self.avg_AUC = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='weighted')
+        self.avg_F1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='weighted')
 
     def forward(self, X):
         """
@@ -164,6 +165,7 @@ class ESDSegmentation(pl.LightningModule):
             self.log(f'train_f1_class_{i}', f1[i])
             self.log(f'train_auroc_class_{i}', auroc[i])
 
+        self.log('average ACC', self.avg_ACC(logits, mask))
         self.log('average IoU', self.avg_IoU(logits, mask))
         self.log('average AUROC', self.avg_AUC(logits, mask))
         self.log('average F-1', self.avg_F1(logits, mask))

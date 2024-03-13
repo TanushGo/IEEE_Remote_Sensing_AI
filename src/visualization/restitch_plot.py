@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from src.preprocessing.subtile_esd_hw02 import TileMetadata, Subtile
 
 
@@ -26,36 +27,44 @@ def restitch_and_plot(
         satellite_type: str
         rgb_bands: List[int]
     """
-    # RGB Satellite Image
-    rgb_image = np.stack([stitched_satellite[band - 1] for band in rgb_bands], axis=-1)
-    rgb_image = np.clip(rgb_image / np.max(rgb_image), 0, 1)  # Normalize for plotting
+    # Assuming datamodule has a method to load and preprocess data for a specific tile
+    satellite_stack, _ = datamodule.load_and_preprocess(
+        parent_tile_id, satellite_types=[satellite_type]
+    )
+    rgb_image = np.transpose(
+        satellite_stack[satellite_type][:, rgb_bands, :, :], (1, 2, 0)
+    )
+    ground_truth, _ = datamodule.load_and_preprocess(
+        parent_tile_id, satellite_types=["gt"]
+    )
+    # Normalize for display
+    rgb_image = rgb_image / rgb_image.max()
+
+    # Model prediction
+    model.eval()  # Ensure the model is in evaluation mode
+    with torch.no_grad():
+        satellite_tensor = torch.from_numpy(satellite_stack[satellite_type]).unsqueeze(
+            0
+        )  # Add batch dimension
+        prediction = model(satellite_tensor.float()).squeeze(
+            0
+        )  # Remove batch dimension
+    prediction = torch.argmax(prediction, dim=0).numpy()  # Convert to class indices
 
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
-        "Settlements", np.array(["#ff0000", "#0000ff", "#ffff00", "#b266ff"]), N=4
+        "Settlements", ["#ff0000", "#0000ff", "#ffff00", "#b266ff"], N=4
     )
 
     fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
     axs[0].imshow(rgb_image)
     axs[0].set_title("RGB Satellite Image")
-    axs[0].axis("off")
-
-    # make sure to use cmap=cmap, vmin=-0.5 and vmax=3.5 when running
-    # axs[i].imshow on the 1d images in order to have the correct
-    # colormap for the images.
-    # On one of the 1d images' axs[i].imshow, make sure to save its output as
-    # `im`, i.e, im = axs[i].imshow
-    im = axs[1].imshow(stitched_ground_truth, cmap=cmap, vmin=-0.5, vmax=3.5)
+    im = axs[1].imshow(ground_truth.squeeze(), cmap=cmap, vmin=-0.5, vmax=3.5)
     axs[1].set_title("Ground Truth")
-    axs[1].axis("off")
-
-    axs[2].imshow(stitched_prediction, cmap=cmap, vmin=-0.5, vmax=3.5)
+    axs[2].imshow(prediction, cmap=cmap, vmin=-0.5, vmax=3.5)
     axs[2].set_title("Model Prediction")
-    axs[2].axis("off")
 
-    # The following lines sets up the colorbar to the right of the images
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    cbar = fig.colorbar(im, cax=cbar_ax)
+    # Colorbar
+    cbar = fig.colorbar(im, ax=axs.ravel().tolist(), shrink=0.95)
     cbar.set_ticks([0, 1, 2, 3])
     cbar.set_ticklabels(
         [
@@ -65,11 +74,12 @@ def restitch_and_plot(
             "No Sttlmnts W Elec",
         ]
     )
-    if image_dir is None:
-        plt.show()
+
+    if image_dir is not None:
+        plt.savefig(Path(image_dir) / f"{parent_tile_id}_comparison.png")
     else:
-        plt.savefig(Path(image_dir) / "restitched_visible_gt_predction.png")
-        plt.close()
+        plt.show()
+    plt.close()
 
 
 import numpy as np
@@ -108,57 +118,55 @@ def restitch_eval(
         satellite_metadata_from_subtile: Aggregated metadata from all subtiles.
     """
 
-    dir = Path(dir)
-    satellite_subtile = []
-    ground_truth_subtile = []
-    predictions_subtile = []
-    satellite_metadata_from_subtile = []
+    stitched_image = None
+    stitched_ground_truth = None
+    stitched_predictions = None
 
-    for i in range(*range_x):
-        satellite_subtile_row = []
-        ground_truth_subtile_row = []
-        predictions_subtile_row = []
-        satellite_metadata_from_subtile_row = []
+    model.eval()  # Ensure the model is in evaluation mode
+    for x in range(range_x[0], range_x[1]):
+        row_images = []
+        row_ground_truths = []
+        row_predictions = []
+        for y in range(range_y[0], range_y[1]):
+            # Load and preprocess data for the specific subtile
+            satellite_stack, satellite_metadata = datamodule.load_and_preprocess(
+                f"{tile_id}_{x}_{y}", satellite_types=[satellite_type, "gt"]
+            )
 
-        for j in range(*range_y):
-            subtile_path = dir / "subtiles" / f"{tile_id}_{i}_{j}.npz"
-            subtile = Subtile.load(
-                subtile_path
-            )  # Load subtile, ensure Subtile has a .load() method
-
-            satellite_data = subtile.satellite_stack[satellite_type]
-            ground_truth = subtile.ground_truth  # Assumes ground_truth attribute exists
-
-            # Prepare data for model evaluation
-            X = torch.tensor(satellite_data).unsqueeze(0).float()
-            if torch.cuda.is_available():
-                X = X.cuda()
-
-            # Evaluate with model
-            model.eval()
+            # Prepare data for model prediction
+            satellite_tensor = torch.from_numpy(
+                satellite_stack[satellite_type]
+            ).unsqueeze(
+                0
+            )  # Add batch dimension
             with torch.no_grad():
-                predictions = model(X)
-            predictions = predictions.squeeze().cpu().numpy()
+                prediction = model(satellite_tensor.float()).squeeze(
+                    0
+                )  # Remove batch dimension
+            prediction = torch.argmax(
+                prediction, dim=0
+            ).numpy()  # Convert to class indices
 
-            satellite_subtile_row.append(satellite_data)
-            ground_truth_subtile_row.append(ground_truth)
-            predictions_subtile_row.append(predictions)
-            satellite_metadata_from_subtile_row.append(
-                subtile.metadata
-            )  # Assuming metadata attribute
+            # Concatenate data for the current row
+            row_images.append(satellite_stack[satellite_type])
+            row_ground_truths.append(satellite_stack["gt"])
+            row_predictions.append(prediction)
 
-        satellite_subtile.append(np.concatenate(satellite_subtile_row, axis=-1))
-        ground_truth_subtile.append(np.concatenate(ground_truth_subtile_row, axis=-1))
-        predictions_subtile.append(np.concatenate(predictions_subtile_row, axis=-1))
-        satellite_metadata_from_subtile.append(satellite_metadata_from_subtile_row)
+        # Concatenate the rows
+        if stitched_image is None:
+            stitched_image = np.concatenate(row_images, axis=2)
+            stitched_ground_truth = np.concatenate(row_ground_truths, axis=2)
+            stitched_predictions = np.concatenate(row_predictions, axis=2)
+        else:
+            stitched_image = np.concatenate(
+                [stitched_image, np.concatenate(row_images, axis=2)], axis=1
+            )
+            stitched_ground_truth = np.concatenate(
+                [stitched_ground_truth, np.concatenate(row_ground_truths, axis=2)],
+                axis=1,
+            )
+            stitched_predictions = np.concatenate(
+                [stitched_predictions, np.concatenate(row_predictions, axis=2)], axis=1
+            )
 
-    stitched_satellite = np.concatenate(satellite_subtile, axis=-2)
-    stitched_ground_truth = np.concatenate(ground_truth_subtile, axis=-2)
-    stitched_predictions = np.concatenate(predictions_subtile, axis=-2)
-
-    return (
-        stitched_satellite,
-        stitched_ground_truth,
-        stitched_predictions,
-        satellite_metadata_from_subtile,
-    )
+    return stitched_image, stitched_ground_truth, stitched_predictions
