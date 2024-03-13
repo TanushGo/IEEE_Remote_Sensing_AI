@@ -35,7 +35,6 @@ class FCNResnetTransfer(nn.Module):
         # the number of channels of the image and the number of classes we are predicting
         self.model = fcn_resnet101(num_classes=output_channels)
         
-        
         self.model.backbone.conv1 = nn.Conv2d(input_channels, 64, kernel_size=(7,7),stride=(2,2), padding=(3,3), bias=False) 
         self.model.classifier[4] =nn.Conv2d(512, output_channels, kernel_size=(1,1),stride=(1,1)) 
         self.pool = nn.AvgPool2d(kernel_size=(scale_factor,scale_factor))
@@ -55,4 +54,5 @@ class FCNResnetTransfer(nn.Module):
             (batch, self.output_channels, width//self.scale_factor, height//self.scale_factor)
         """
         # Be careful of the output data structure of model you loaded (e.g. dict, tuple, etc.)
-        return self.pool(self.model.forward(x))
+        y = self.model.forward(x)
+        return self.pool(y["out"])
