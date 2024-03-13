@@ -34,13 +34,17 @@ class DoubleConvHelper(nn.Module):
         ]
         self.model = nn.Sequential(*layers)
         
-
-
-
     def forward(self, x):
         """Forward pass through the layers of the helper block"""
-        return self.model.forward(x)
 
+        print(f'x1 type is {type(x)}')
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+            x = x.to(device)
+            # x = x.to(torch.device('cuda'), dtype=torch.float32)
+            print(f'x2 type is {type(x)}')
+
+        return self.model.forward(x)
 
 
 class Encoder(nn.Module):
@@ -51,7 +55,6 @@ class Encoder(nn.Module):
             nn.MaxPool2d(2),
             DoubleConvHelper(in_channels, out_channels)
         )
-
 
     def forward(self, x):
         return self.maxpool_conv(x)
@@ -175,6 +178,11 @@ class UNet(nn.Module):
             (batch, some_embedding_size//2, 2*some_width, 2*some_height)
             as the residual.
         """
+        # if type(x) is 
+        # print(f'x type is {type(x)}')
+        # if torch.cuda.is_available():
+        #     x = x.cuda()
+
         inc_list = deque()
         x = self.inc(x)
         inc_list.appendleft(x)

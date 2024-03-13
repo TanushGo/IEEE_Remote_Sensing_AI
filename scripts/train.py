@@ -40,7 +40,7 @@ class ESDConfig:
     batch_size: int = 8
     max_epochs: int = 2
     seed: int = 12378921
-    learning_rate: float = 1e-3
+    learning_rate: float = 1e-5
     num_workers: int = 11
     accelerator: str = "gpu"
     devices: int = 1
@@ -64,8 +64,14 @@ def train(options: ESDConfig):
             options for the experiment
     """
     # Initialize the weights and biases logger
-    wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = WandbLogger(project="UNET")
+    # wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
+    # wandb_logger = WandbLogger(project="CNN")
+
+    wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = WandbLogger(project="FCNR")
+
+    # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
+    # wandb_logger = WandbLogger(project="UNET")
     
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly

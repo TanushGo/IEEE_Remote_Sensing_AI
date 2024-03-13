@@ -48,14 +48,14 @@ class ESDSegmentation(pl.LightningModule):
 
         # not sure if iou is correct
 
-        self.acc = torchmetrics.Accuracy(task='multiclass', num_classes=out_channels)
+        self.acc = torchmetrics.classification.Accuracy(task='multiclass', num_classes=out_channels)
         # self.iou = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='none')
-        self.f1 = torchmetrics.F1Score(task='multiclass', num_classes=out_channels, average='none')
-        self.auroc = torchmetrics.AUROC(task='multiclass', num_classes=out_channels, average='none')
+        self.f1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='none')
+        self.auroc = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='none')
 
         # self.avg_IoU = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='macro')
-        self.avg_AUC = torchmetrics.AUROC(task='multiclass', num_classes=out_channels, average='macro')
-        self.avg_F1 = torchmetrics.F1Score(task='multiclass', num_classes=out_channels, average='macro')
+        self.avg_AUC = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='macro')
+        self.avg_F1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='macro')
 
     def forward(self, X):
         """
@@ -110,7 +110,7 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('train/loss', loss)
+        self.log('train_loss', loss)
 
         return loss
 
@@ -151,14 +151,13 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('val/loss', loss, batch_size=logits[0])
+        self.log('val_loss', loss)
 
-        self.acc(logits, mask)
-        self.f1(logits, mask)
-        self.auroc(logits, mask)
-
-        self.avg_AUC(logits, mask)
-        self.avg_F1(logits, mask)
+        self.log('accuracy per class', self.acc(logits, mask))
+        self.log('F-1 per class', self.f1(logits, mask))
+        self.log('AUROC per class', self.auroc(logits, mask))
+        self.log('average AUROC', self.avg_AUC(logits, mask))
+        self.log('average F-1', self.avg_F1(logits, mask))
 
         return loss
 
