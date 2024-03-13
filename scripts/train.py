@@ -40,7 +40,7 @@ class ESDConfig:
     batch_size: int = 8
     max_epochs: int = 2
     seed: int = 12378921
-    learning_rate: float = 1e-5
+    learning_rate: float = 1e-3
     num_workers: int = 11
     accelerator: str = "gpu"
     devices: int = 1

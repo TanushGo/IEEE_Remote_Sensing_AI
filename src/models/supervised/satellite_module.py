@@ -48,12 +48,12 @@ class ESDSegmentation(pl.LightningModule):
 
         # not sure if iou is correct
 
-        self.acc = torchmetrics.classification.Accuracy(task='multiclass', num_classes=out_channels)
-        # self.iou = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='none')
-        self.f1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='none')
-        self.auroc = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='none')
+        self.acc = torchmetrics.classification.MulticlassAccuracy(num_classes=out_channels, average='none')
+        self.iou = torchmetrics.classification.MulticlassJaccardIndex(num_classes=out_channels, average='none')
+        self.f1 = torchmetrics.classification.MulticlassF1Score(num_classes=out_channels, average='none')
+        self.auroc = torchmetrics.classification.MulticlassAUROC(num_classes=out_channels, average='none')
 
-        # self.avg_IoU = torchmetrics.detection.IntersectionOverUnion(num_classes=out_channels, reduction='macro')
+        self.avg_IoU = torchmetrics.classification.JaccardIndex(num_classes=out_channels, average='macro')
         self.avg_AUC = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='macro')
         self.avg_F1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='macro')
 
@@ -154,8 +154,10 @@ class ESDSegmentation(pl.LightningModule):
         self.log('val_loss', loss)
 
         self.log('accuracy per class', self.acc(logits, mask))
+        self.log('IoU per class', self.iou(logits, mask))
         self.log('F-1 per class', self.f1(logits, mask))
         self.log('AUROC per class', self.auroc(logits, mask))
+        self.log('average IoU', self.avg_IoU(logits, mask))
         self.log('average AUROC', self.avg_AUC(logits, mask))
         self.log('average F-1', self.avg_F1(logits, mask))
 
