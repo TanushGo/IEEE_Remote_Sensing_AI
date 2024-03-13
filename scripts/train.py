@@ -66,7 +66,7 @@ def train(options: ESDConfig):
     # Initialize the weights and biases logger
     wandb.init(project="CS175", name=options.wandb_run_name, config=options.__dict__)
     wandb_logger = WandbLogger(project="CS175")
-
+    
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
     # make sure to prepare_data in case the data has not been preprocessed
@@ -107,8 +107,8 @@ def train(options: ESDConfig):
 
     # First trainer for GPU usage, second for without
     torch.set_float32_matmul_precision('medium')
-    #trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator)
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs,logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option

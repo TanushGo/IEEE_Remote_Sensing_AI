@@ -93,7 +93,7 @@ class ESDDataModule(pl.LightningDataModule):
 
         # added these 3 bc idk how else to make it work
         self.prepare_data_per_node = False
-        self._log_hyperparams = False
+        self._log_hyperparams = True
         self.allow_zero_length_dataloader_with_multiple_devices = False
 
         torch.manual_seed(seed)
