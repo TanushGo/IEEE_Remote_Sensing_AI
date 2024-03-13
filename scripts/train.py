@@ -67,11 +67,11 @@ def train(options: ESDConfig):
     # wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = WandbLogger(project="CNN")
 
-    wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = WandbLogger(project="FCNR")
+    # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
+    # wandb_logger = WandbLogger(project="FCNR")
 
-    # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="UNET")
+    wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = WandbLogger(project="UNET")
     
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
@@ -113,8 +113,8 @@ def train(options: ESDConfig):
 
     # First trainer for GPU usage, second for without
     torch.set_float32_matmul_precision('medium')
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
-    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option
