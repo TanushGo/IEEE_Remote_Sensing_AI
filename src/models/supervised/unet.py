@@ -26,10 +26,10 @@ class DoubleConvHelper(nn.Module):
         super().__init__()
         mid_channels = out_channels if mid_channels is None else mid_channels
         layers = [
-            nn.Conv2d(in_channels, mid_channels, 3, padding=1, bias=False),
+            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(),
-            nn.Conv2d(mid_channels, out_channels, 1),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=1),
             nn.BatchNorm2d(out_channels),
         ]
         self.model = nn.Sequential(*layers)
@@ -153,8 +153,8 @@ class UNet(nn.Module):
             if(i == n_encoders-1):
                 self.decoders.append(Decoder(size,out_channels))
                 break
-            self.decoders.append(Decoder(size,size/2))
-            size=size/2
+            self.decoders.append(Decoder(size,size//2))
+            size=size//2
 
     
         self.outc =nn.MaxPool2d(kernel_size=(scale_factor,scale_factor))

@@ -23,6 +23,7 @@ from src.models.supervised.satellite_module import ESDSegmentation
 import wandb
 from lightning.pytorch.loggers import WandbLogger
 
+torch.set_default_dtype(torch.float32)
 
 @dataclass
 class ESDConfig:
@@ -106,8 +107,8 @@ def train(options: ESDConfig):
 
     # First trainer for GPU usage, second for without
     torch.set_float32_matmul_precision('medium')
-    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator)
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs)
+    #trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs,logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option
