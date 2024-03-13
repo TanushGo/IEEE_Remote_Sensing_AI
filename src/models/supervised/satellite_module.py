@@ -46,7 +46,6 @@ class ESDSegmentation(pl.LightningModule):
         # per class AUC, average AUC, per class F1 score, average F1 score
         # these metrics will be logged to weights and biases
 
-        # not sure if iou is correct
 
         self.acc = torchmetrics.classification.MulticlassAccuracy(num_classes=out_channels, average='none')
         self.iou = torchmetrics.classification.MulticlassJaccardIndex(num_classes=out_channels, average='none')
@@ -153,10 +152,17 @@ class ESDSegmentation(pl.LightningModule):
         loss = nn.functional.cross_entropy(logits, mask)
         self.log('val_loss', loss)
 
-        self.log('accuracy per class', self.acc(logits, mask))
-        self.log('IoU per class', self.iou(logits, mask))
-        self.log('F-1 per class', self.f1(logits, mask))
-        self.log('AUROC per class', self.auroc(logits, mask))
+
+        acc = self.acc(logits, mask)
+        iou = self.iou(logits, mask)
+        f1 = self.f1(logits, mask)
+        auroc = self.auroc(logits, mask)
+        for i in range(4):
+            self.log(f'train_acc_class_{i}', acc[i])
+            self.log(f'train_iou_class_{i}', iou[i])
+            self.log(f'train_f1_class_{i}', f1[i])
+            self.log(f'train_auroc_class_{i}', auroc[i])
+
         self.log('average IoU', self.avg_IoU(logits, mask))
         self.log('average AUROC', self.avg_AUC(logits, mask))
         self.log('average F-1', self.avg_F1(logits, mask))
