@@ -53,7 +53,7 @@ class ESDSegmentation(pl.LightningModule):
         self.f1 = torchmetrics.classification.MulticlassF1Score(num_classes=out_channels, average='none')
         self.auroc = torchmetrics.classification.MulticlassAUROC(num_classes=out_channels, average='none')
 
-        self.avg_IoU = torchmetrics.classification.JaccardIndex(num_classes=out_channels, average='macro')
+        self.avg_IoU = torchmetrics.classification.JaccardIndex(task='multiclass', num_classes=out_channels, average='macro')
         self.avg_AUC = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='macro')
         self.avg_F1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='macro')
 
