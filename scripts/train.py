@@ -37,7 +37,7 @@ class ESDConfig:
     processed_dir: str | os.PathLike = root / 'data/processed/4x4'
     raw_dir: str | os.PathLike = root / 'data/raw/Train'
     selected_bands: None = None
-    model_type: str = "FCNResnetTransfer"
+    model_type: str = "UNet"
     tile_size_gt: int = 4
     batch_size: int = 8
     max_epochs: int = 2
@@ -64,6 +64,10 @@ def train(options: ESDConfig):
         options: ESDConfig
             options for the experiment
     """
+    # torch.set_default_dtype(torch.float32)
+    # if torch.cuda.is_available():
+    #     torch.set_default_device('cuda')
+
     # Initialize the weights and biases logger
     # wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = WandbLogger(project="CNN")
@@ -108,14 +112,13 @@ def train(options: ESDConfig):
         RichModelSummary(max_depth=3),
     ]
 
-    # create a pytorch Trainer
-    # see pytorch_lightning.Trainer
+    # create a pytorch_lightning Trainer
     # make sure to use the options object to load it with the correct options
 
     # First trainer for GPU usage, second for without
     torch.set_float32_matmul_precision('medium')
-    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option
@@ -123,11 +126,14 @@ def train(options: ESDConfig):
 
 
 if __name__ == '__main__':
+    # set the default device to cuda if available, set default dtype to float32
+    torch.set_default_dtype(torch.float32)
+    if torch.cuda.is_available():
+        torch.set_default_device('cuda')
+
     # load dataclass arguments from yml file
-    
     config = ESDConfig()
     parser = ArgumentParser()
-
     
     parser.add_argument("--model_type", type=str, help="The model to initialize.", default=config.model_type)
     parser.add_argument("--learning_rate", type=float, help="The learning rate for training model", default=config.learning_rate)
