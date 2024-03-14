@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from src.preprocessing.subtile_esd_hw02 import TileMetadata, Subtile
-
+ 
 
 def restitch_and_plot(
     options,
