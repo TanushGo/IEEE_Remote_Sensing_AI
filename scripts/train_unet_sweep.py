@@ -1,12 +1,15 @@
+## RUN WITH
+## python -m scripts.train_unet_sweep
+
 import pyprojroot
 import sys
 root = pyprojroot.here()
 sys.path.append(str(root))
-import pytorch_lightning as pl
+
 import torch
-from argparse import ArgumentParser
+import pytorch_lightning as pl
+
 import os
-from typing import List
 from dataclasses import dataclass
 
 from pytorch_lightning.callbacks import (
@@ -15,7 +18,6 @@ from pytorch_lightning.callbacks import (
     RichProgressBar,
     RichModelSummary
 )
-
 
 from src.esd_data.datamodule import ESDDataModule
 from src.models.supervised.satellite_module import ESDSegmentation
@@ -37,7 +39,7 @@ class ESDConfig:
     processed_dir: str | os.PathLike = root / 'data/processed/4x4'
     raw_dir: str | os.PathLike = root / 'data/raw/Train'
     selected_bands: None = None
-    model_type: str = "SegmentationCNN"
+    model_type: str = "UNet"
     tile_size_gt: int = 4
     batch_size: int = 8
     max_epochs: int = 2
@@ -64,22 +66,11 @@ def train(options: ESDConfig):
         options: ESDConfig
             options for the experiment
     """
-    # torch.set_default_dtype(torch.float32)
-    # if torch.cuda.is_available():
-    #     torch.set_default_device('cuda')
 
-    # Initialize the weights and biases logger
-    wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = WandbLogger(project="CNN")
-
-    # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="FCNR")
-
-    # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="UNET")
+    wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = WandbLogger(project="UNET")
     
-    # initiate the ESDDatamodule
-    # use the options object to initiate the datamodule correctly
+    # initiate the ESDDatamodule with options object to initiate the datamodule correctly
     # make sure to prepare_data in case the data has not been preprocessed
     esd_dm = ESDDataModule(options.processed_dir, options.raw_dir, options.selected_bands, options.tile_size_gt, options.batch_size, options.seed)
     esd_dm.prepare_data()
@@ -116,40 +107,57 @@ def train(options: ESDConfig):
     # make sure to use the options object to load it with the correct options
 
     # First trainer for GPU usage, second for without
-    torch.set_float32_matmul_precision('medium')
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
-    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    # torch.set_float32_matmul_precision('medium')
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
-    # run trainer.fit
-    # make sure to use the datamodule option
+    # run trainer.fit with the datamodule option
     trainer.fit(esd_segmentation, datamodule=esd_dm)
+
+def main():
+    # torch.set_default_dtype(torch.float32)
+    if torch.cuda.is_available():
+        print(f'device count: {torch.cuda.device_count()}')
+        print(f'current device: {torch.cuda.current_device()}')
+        print(f'device name: {torch.cuda.get_device_name()}')
+        torch.set_default_device('cuda')
+
+    wandb.init(project="UNET-sweep")
+    print(wandb.config)
+    options = ESDConfig(**wandb.config)
+    train(options)
 
 
 if __name__ == '__main__':
 
-    # load dataclass arguments from yml file
-    config = ESDConfig()
-    parser = ArgumentParser()
-    
-    parser.add_argument("--model_type", type=str, help="The model to initialize.", default=config.model_type)
-    parser.add_argument("--learning_rate", type=float, help="The learning rate for training model", default=config.learning_rate)
-    parser.add_argument("--max_epochs", type=int, help="Number of epochs to train for.", default=config.max_epochs)
-    parser.add_argument("--raw_dir", type=str, default=config.raw_dir, help='Path to raw directory')
-    parser.add_argument("-p", "--processed_dir", type=str, default=config.processed_dir,
-                        help=".")
-    parser.add_argument('--batch_size', help="Batch size to train in", type=int, default=config.batch_size)
-
-    parser.add_argument('--in_channels', type=int, default=config.in_channels, help='Number of input channels')
-    parser.add_argument('--out_channels', type=int, default=config.out_channels, help='Number of output channels')
-    parser.add_argument('--depth', type=int, help="Depth of the encoders (CNN only)", default=config.depth)
-    parser.add_argument('--n_encoders', type=int, help="Number of encoders (Unet only)", default=config.n_encoders)
-    parser.add_argument('--embedding_size', type=int, help="Embedding size of the neural network (CNN/Unet)", default=config.embedding_size)
-    parser.add_argument('--pool_sizes', help="A comma separated list of pool_sizes (CNN only)", type=str, default=config.pool_sizes)
-    parser.add_argument('--kernel_size', help="Kernel size of the convolutions", type=int, default=config.kernel_size)
-    parser.add_argument('--scale_factor', help="Scale factor between the labels and the image (Unet and Transfer Resnet)", type=int, default=config.scale_factor)
-
-    # --pool_sizes=5,5,2 to call it correctly
-    
-    parse_args = parser.parse_args()
-    
-    train(ESDConfig(**parse_args.__dict__))
+    sweep_config = {
+        'name': 'UNet-sweep',
+        'method': 'bayes',
+        'metric': {
+            'name': 'core_values/average ACC',
+            'goal': 'maximize'
+        },
+        'parameters': {
+            'learning_rate': {
+                'min': 0.00001,
+                'max': 0.1,
+                'distribution': 'log_uniform_values'
+            },
+            'batch_size': {
+                'values': [4, 8, 16]
+            },
+            'max_epochs': {
+                'min': 3,
+                'max': 8,
+                'distribution': 'int_uniform'
+            },
+            'n_encoders': {
+                'values': [2, 3, 4]
+            },
+            'scale_factor': {
+                'values': [25, 50, 100]
+            }
+        }
+    }
+    sweep_id = wandb.sweep(sweep=sweep_config, project="UNet-sweep")
+    wandb.agent(sweep_id, function=main, count=100)

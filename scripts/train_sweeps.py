@@ -18,16 +18,12 @@ if torch.cuda.is_available():
     torch.set_default_device('cuda')
 
 def main():
-    wandb.init(project="UNET-sweep")
+    wandb.init(project="CNN-sweep")
     print(wandb.config)
     options = ESDConfig(**wandb.config)
     train(options)
 
 if __name__ == "__main__":
-    torch.set_default_dtype(torch.float32)
-    if torch.cuda.is_available():
-        torch.set_default_device('cuda')
-
     parser = argparse.ArgumentParser(description="Run hyperparameter sweeps using Weights and Biases")
 
     parser.add_argument('--sweep_file', type=str, help="Path to sweep.yml file", default=None)
@@ -39,5 +35,5 @@ if __name__ == "__main__":
             sweep_config = yaml.safe_load(f)
             print(f"Sweep config: {sweep_config}")
 
-        sweep_id = wandb.sweep(sweep=sweep_config, project="UNet-sweep")
+        sweep_id = wandb.sweep(sweep=sweep_config, project="CNN-sweep")
         wandb.agent(sweep_id, function=main, count=100)
