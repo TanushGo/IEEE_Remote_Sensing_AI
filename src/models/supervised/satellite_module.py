@@ -7,6 +7,7 @@ import torchmetrics
 from src.models.supervised.segmentation_cnn import SegmentationCNN
 from src.models.supervised.unet import UNet
 from src.models.supervised.resnet_transfer import FCNResnetTransfer
+from src.models.supervised.random_forests import RandomForestsClassifier
 
 
 class ESDSegmentation(pl.LightningModule):
@@ -14,8 +15,14 @@ class ESDSegmentation(pl.LightningModule):
     LightningModule for training a segmentation model on the ESD dataset
     """
 
-    def __init__(self, model_type, in_channels, out_channels,
-                 learning_rate=1e-3, model_params: dict = {}):
+    def __init__(
+        self,
+        model_type,
+        in_channels,
+        out_channels,
+        learning_rate=1e-3,
+        model_params: dict = {},
+    ):
         """
         Initializes the model with the given parameters.
 
@@ -40,21 +47,39 @@ class ESDSegmentation(pl.LightningModule):
             self.model = SegmentationCNN(**model_params)
         elif model_type == "FCNResnetTransfer":
             self.model = FCNResnetTransfer(in_channels, out_channels, **model_params)
+        elif model_type == "RandomForests":
+            self.model = RandomForestsClassifier(**model_params)
 
         # define performance metrics for segmentation task
         # such as accuracy per class accuracy, average IoU, per class IoU,
         # per class AUC, average AUC, per class F1 score, average F1 score
         # these metrics will be logged to weights and biases
 
-        self.acc = torchmetrics.classification.MulticlassAccuracy(num_classes=out_channels, average='none')
-        self.iou = torchmetrics.classification.MulticlassJaccardIndex(num_classes=out_channels, average='none')
-        self.f1 = torchmetrics.classification.MulticlassF1Score(num_classes=out_channels, average='none')
-        self.auroc = torchmetrics.classification.MulticlassAUROC(num_classes=out_channels, average='none')
+        self.acc = torchmetrics.classification.MulticlassAccuracy(
+            num_classes=out_channels, average="none"
+        )
+        self.iou = torchmetrics.classification.MulticlassJaccardIndex(
+            num_classes=out_channels, average="none"
+        )
+        self.f1 = torchmetrics.classification.MulticlassF1Score(
+            num_classes=out_channels, average="none"
+        )
+        self.auroc = torchmetrics.classification.MulticlassAUROC(
+            num_classes=out_channels, average="none"
+        )
 
-        self.avg_ACC = torchmetrics.classification.Accuracy(task='multiclass', num_classes=out_channels, average='weighted')
-        self.avg_IoU = torchmetrics.classification.JaccardIndex(task='multiclass', num_classes=out_channels, average='weighted')
-        self.avg_AUC = torchmetrics.classification.AUROC(task='multiclass', num_classes=out_channels, average='weighted')
-        self.avg_F1 = torchmetrics.classification.F1Score(task='multiclass', num_classes=out_channels, average='weighted')
+        self.avg_ACC = torchmetrics.classification.Accuracy(
+            task="multiclass", num_classes=out_channels, average="weighted"
+        )
+        self.avg_IoU = torchmetrics.classification.JaccardIndex(
+            task="multiclass", num_classes=out_channels, average="weighted"
+        )
+        self.avg_AUC = torchmetrics.classification.AUROC(
+            task="multiclass", num_classes=out_channels, average="weighted"
+        )
+        self.avg_F1 = torchmetrics.classification.F1Score(
+            task="multiclass", num_classes=out_channels, average="weighted"
+        )
 
     def forward(self, X):
         """
@@ -73,7 +98,7 @@ class ESDSegmentation(pl.LightningModule):
         the current loss.
 
         Note: CrossEntropyLoss requires mask to be of type
-        torch.int64 and shape (batches, width, height), 
+        torch.int64 and shape (batches, width, height),
         it only has one channel as the label is encoded as
         an integer index. As these may not be this shape and
         type from the dataset, you might have to use
@@ -93,7 +118,7 @@ class ESDSegmentation(pl.LightningModule):
                 of shape (batch, input_channels, width, height)
                 mask: Batch of target labels from the dataloader,
                 by default of shape (batch, 1, width, height)
-                metadata: List[SubtileMetadata] of length batch containing 
+                metadata: List[SubtileMetadata] of length batch containing
                 the metadata of each subtile in the batch. You may not
                 need this.
 
@@ -109,17 +134,16 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        
-        self.log('core_values/train_loss', loss)
+
+        self.log("core_values/train_loss", loss)
 
         return loss
-
 
     def validation_step(self, batch, batch_idx):
         """
         Gets the current batch, which is a tuple of
         (sat_img, mask, metadata), predicts the value with
-        self.forward, then evaluates the 
+        self.forward, then evaluates the
 
         Note: The type of the tensor input to the neural network
         must be the same as the weights of the neural network.
@@ -133,7 +157,7 @@ class ESDSegmentation(pl.LightningModule):
                 of shape (batch, input_channels, width, height)
                 mask: Batch of target labels from the dataloader,
                 by default of shape (batch, 1, width, height)
-                metadata: List[SubtileMetadata] of length batch containing 
+                metadata: List[SubtileMetadata] of length batch containing
                 the metadata of each subtile in the batch. You may not
                 need this.
 
@@ -151,23 +175,22 @@ class ESDSegmentation(pl.LightningModule):
 
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
-        self.log('core_values/val_loss', loss)
-
+        self.log("core_values/val_loss", loss)
 
         acc = self.acc(logits, mask)
         iou = self.iou(logits, mask)
         f1 = self.f1(logits, mask)
         auroc = self.auroc(logits, mask)
         for i in range(4):
-            self.log(f'train_acc_class_{i}', acc[i])
-            self.log(f'train_iou_class_{i}', iou[i])
-            self.log(f'train_f1_class_{i}', f1[i])
-            self.log(f'train_auroc_class_{i}', auroc[i])
+            self.log(f"train_acc_class_{i}", acc[i])
+            self.log(f"train_iou_class_{i}", iou[i])
+            self.log(f"train_f1_class_{i}", f1[i])
+            self.log(f"train_auroc_class_{i}", auroc[i])
 
-        self.log('core_values/average ACC', self.avg_ACC(logits, mask))
-        self.log('core_values/average IoU', self.avg_IoU(logits, mask))
-        self.log('core_values/average AUROC', self.avg_AUC(logits, mask))
-        self.log('core_values/average F-1', self.avg_F1(logits, mask))
+        self.log("core_values/average ACC", self.avg_ACC(logits, mask))
+        self.log("core_values/average IoU", self.avg_IoU(logits, mask))
+        self.log("core_values/average AUROC", self.avg_AUC(logits, mask))
+        self.log("core_values/average F-1", self.avg_F1(logits, mask))
 
         return loss
 

@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, jaccard_sco
 from torch.utils.data import DataLoader
 
 
-class RandomForestLightningModule(pl.LightningModule):
+class RandomForestsClassifier(pl.LightningModule):
     def __init__(
         self, n_estimators=100, max_depth=None, num_features=None, num_classes=None
     ):

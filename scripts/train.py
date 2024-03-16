@@ -22,7 +22,8 @@ from src.esd_data.datamodule import ESDDataModule
 from src.models.supervised.satellite_module import ESDSegmentation
 
 import wandb
-from lightning.pytorch.loggers import WandbLogger
+
+# from lightning.pytorch.loggers import WandbLogger
 
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
@@ -40,7 +41,7 @@ class ESDConfig:
     processed_dir: str | os.PathLike = root / "data/processed/4x4"
     raw_dir: str | os.PathLike = root / "data/raw/Train"
     selected_bands: None = None
-    model_type: str = "UNet"
+    model_type: str = "RandomForests"
     tile_size_gt: int = 4
     batch_size: int = 8
     max_epochs: int = 2
@@ -79,11 +80,11 @@ def train(options: ESDConfig):
     # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = WandbLogger(project="FCNR")
 
-    # wandb.init(project="ESD_RF", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = pl.loggers.WandbLogger(project="ESD_RF")
+    wandb.init(project="ESD_RF", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = pl.loggers.WandbLogger(project="ESD_RF")
 
-    wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = WandbLogger(project="UNET")
+    # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
+    # wandb_logger = WandbLogger(project="UNET")
 
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly

@@ -1,4 +1,5 @@
 # folders to ignore
+data
 data/processed/*
 data/raw/Val/
 data/raw/zipfiles/*
