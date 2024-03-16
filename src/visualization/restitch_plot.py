@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from src.preprocessing.subtile_esd_hw02 import TileMetadata, Subtile
-
+ 
 
 def load_npz_data(npz_path, satellite_type, rgb_bands):
     """Load and return RGB image and ground truth from an NPZ file."""

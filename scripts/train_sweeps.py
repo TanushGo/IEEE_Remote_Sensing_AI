@@ -11,6 +11,11 @@ from pathlib import Path
 import yaml
 import argparse
 from .train import train, ESDConfig
+import torch
+
+torch.set_default_dtype(torch.float32)
+if torch.cuda.is_available():
+    torch.set_default_device('cuda')
 
 def main():
     wandb.init(project="UNET-sweep")
@@ -19,6 +24,10 @@ def main():
     train(options)
 
 if __name__ == "__main__":
+    torch.set_default_dtype(torch.float32)
+    if torch.cuda.is_available():
+        torch.set_default_device('cuda')
+
     parser = argparse.ArgumentParser(description="Run hyperparameter sweeps using Weights and Biases")
 
     parser.add_argument('--sweep_file', type=str, help="Path to sweep.yml file", default=None)

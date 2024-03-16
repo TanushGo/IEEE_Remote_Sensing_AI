@@ -36,14 +36,6 @@ class DoubleConvHelper(nn.Module):
         
     def forward(self, x):
         """Forward pass through the layers of the helper block"""
-
-        # print(f'x1 type is {type(x)}')
-        # if torch.cuda.is_available():
-        #     device = torch.device('cuda')
-        #     x = x.to(device)
-            # x = x.to(torch.device('cuda'), dtype=torch.float32)
-            # print(f'x2 type is {type(x)}')
-
         return self.model.forward(x)
 
 
