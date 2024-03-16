@@ -1,0 +1,19 @@
+program: train.py
+name: FCNR
+method: bayes
+metric:
+  name: average ACC
+  goal: maximize
+  target: 0.90
+parameters:
+  learning_rate:
+    min: 0.00001
+    max: 0.1
+    distribution: log_uniform_values
+  batch_size:
+    values: [2, 4, 8, 10, 12, 14]
+  max_epochs:
+    min: 3
+    max: 10
+    distribution: int_uniform
+  
