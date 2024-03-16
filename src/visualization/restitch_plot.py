@@ -7,52 +7,79 @@ import matplotlib
 from src.preprocessing.subtile_esd_hw02 import TileMetadata, Subtile
  
 
-def load_npz_data(npz_path, satellite_type, rgb_bands):
-    """Load and return RGB image and ground truth from an NPZ file."""
-    data = np.load(npz_path)
-    rgb_image = np.stack(
-        [data[f"{satellite_type}_band_{b}"] for b in rgb_bands], axis=-1
-    )
-    ground_truth = data["gt"]  # Assuming ground truth is stored with the key 'gt'
-    return rgb_image, ground_truth
-
-
 def restitch_and_plot(
-    options, datamodule, model, npz_paths, rgb_bands=[3, 2, 1], image_dir=None
+    options,
+    datamodule,
+    model,
+    parent_tile_id,
+    satellite_type="sentinel2",
+    rgb_bands=[3, 2, 1],
+    image_dir: None | str | os.PathLike = None,
 ):
-    """Plot RGB image, ground truth, and model prediction."""
-    for npz_path in npz_paths:
-        npz_path_full = Path(datamodule.processed_dir) / "Val" / "subtiles" / npz_path
-        rgb_image, ground_truth = load_npz_data(
-            npz_path_full, options.satellite_type, rgb_bands
-        )
+    """
+    Plots the 1) rgb satellite image 2) ground truth 3) model prediction in one row.
 
-        # Preprocess data as required for the model
-        satellite_tensor = (
-            torch.tensor(rgb_image.transpose(2, 0, 1)).unsqueeze(0).float()
-        )  # Add batch dim and convert to float
+    Args:
+        options: EvalConfig
+        datamodule: ESDDataModule
+        model: ESDSegmentation
+        parent_tile_id: str
+        satellite_type: str
+        rgb_bands: List[int]
+    """
+    # Assuming datamodule has a method to load and preprocess data for a specific tile
+    satellite_stack, _ = datamodule.load_and_preprocess(
+        parent_tile_id, satellite_types=[satellite_type]
+    )
+    rgb_image = np.transpose(
+        satellite_stack[satellite_type][:, rgb_bands, :, :], (1, 2, 0)
+    )
+    ground_truth, _ = datamodule.load_and_preprocess(
+        parent_tile_id, satellite_types=["gt"]
+    )
+    # Normalize for display
+    rgb_image = rgb_image / rgb_image.max()
 
-        # Prediction
-        model.eval()
-        with torch.no_grad():
-            prediction = (
-                model(satellite_tensor).squeeze().argmax(0).numpy()
-            )  # Assuming model outputs class probabilities for each pixel
+    # Model prediction
+    model.eval()  # Ensure the model is in evaluation mode
+    with torch.no_grad():
+        satellite_tensor = torch.from_numpy(satellite_stack[satellite_type]).unsqueeze(
+            0
+        )  # Add batch dimension
+        prediction = model(satellite_tensor.float()).squeeze(
+            0
+        )  # Remove batch dimension
+    prediction = torch.argmax(prediction, dim=0).numpy()  # Convert to class indices
 
-        # Visualization
-        fig, axs = plt.subplots(1, 3, figsize=(15, 5))
-        axs[0].imshow(rgb_image / rgb_image.max())  # Normalize for plotting
-        axs[0].set_title("RGB Satellite Image")
-        axs[1].imshow(ground_truth, cmap="viridis")
-        axs[1].set_title("Ground Truth")
-        axs[2].imshow(prediction, cmap="viridis")
-        axs[2].set_title("Model Prediction")
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
+        "Settlements", ["#ff0000", "#0000ff", "#ffff00", "#b266ff"], N=4
+    )
 
-        if image_dir:
-            plt.savefig(Path(image_dir) / f"{Path(npz_path).stem}_comparison.png")
-        else:
-            plt.show()
-        plt.close()
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
+    axs[0].imshow(rgb_image)
+    axs[0].set_title("RGB Satellite Image")
+    im = axs[1].imshow(ground_truth.squeeze(), cmap=cmap, vmin=-0.5, vmax=3.5)
+    axs[1].set_title("Ground Truth")
+    axs[2].imshow(prediction, cmap=cmap, vmin=-0.5, vmax=3.5)
+    axs[2].set_title("Model Prediction")
+
+    # Colorbar
+    cbar = fig.colorbar(im, ax=axs.ravel().tolist(), shrink=0.95)
+    cbar.set_ticks([0, 1, 2, 3])
+    cbar.set_ticklabels(
+        [
+            "Sttlmnts Wo Elec",
+            "No Sttlmnts Wo Elec",
+            "Sttlmnts W Elec",
+            "No Sttlmnts W Elec",
+        ]
+    )
+
+    if image_dir is not None:
+        plt.savefig(Path(image_dir) / f"{parent_tile_id}_comparison.png")
+    else:
+        plt.show()
+    plt.close()
 
 
 import numpy as np

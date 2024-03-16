@@ -7,7 +7,8 @@ import torchmetrics
 from src.models.supervised.segmentation_cnn import SegmentationCNN
 from src.models.supervised.unet import UNet
 from src.models.supervised.resnet_transfer import FCNResnetTransfer
-from src.models.supervised.random_forests import RandomForestsClassifier
+from src.models.supervised.random_forests import RandomForests
+
 
 
 class ESDSegmentation(pl.LightningModule):
@@ -45,11 +46,9 @@ class ESDSegmentation(pl.LightningModule):
             self.model = UNet(**model_params)
         elif model_type == "SegmentationCNN":
             self.model = SegmentationCNN(**model_params)
-        elif model_type == "FCNResnetTransfer":
+        elif model_type == "FCNResnetTransfer" or model_type == "RandomForests":
             self.model = FCNResnetTransfer(in_channels, out_channels, **model_params)
-        elif model_type == "RandomForests":
-            self.model = RandomForestsClassifier(**model_params)
-
+        
         # define performance metrics for segmentation task
         # such as accuracy per class accuracy, average IoU, per class IoU,
         # per class AUC, average AUC, per class F1 score, average F1 score

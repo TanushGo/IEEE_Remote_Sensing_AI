@@ -1,0 +1,25 @@
+program: train.py
+name: CNN
+method: bayes
+metric:
+  name: core_values/average ACC
+  goal: maximize
+  target: 0.90
+parameters:
+  learning_rate:
+    min: 0.00001
+    max: 0.0004
+    distribution: log_uniform_values
+  batch_size:
+    min: 16
+    max: 32
+    distribution: int_uniform
+  max_epochs:
+    min: 8
+    max: 20
+    distribution: int_uniform
+  depth:
+    min: 2
+    max: 4
+    distribution: int_uniform
+  

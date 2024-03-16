@@ -39,6 +39,7 @@ class Encoder(nn.Module):
         for i in range(depth - 1):
             convs.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
                                    padding=(kernel_size // 2, kernel_size // 2)))
+            convs.append(nn.BatchNorm2d(out_channels))
             convs.append(nn.ReLU())
 
         if self.decoder:
@@ -70,8 +71,6 @@ class Encoder(nn.Module):
             pooled_img = out_img
         else:
             pooled_img = self.pool(out_img)
-
-
         
         return pooled_img
 

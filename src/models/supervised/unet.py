@@ -28,9 +28,10 @@ class DoubleConvHelper(nn.Module):
         layers = [
             nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(mid_channels),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Conv2d(mid_channels, out_channels, kernel_size=1),
             nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
         ]
         self.model = nn.Sequential(*layers)
         
