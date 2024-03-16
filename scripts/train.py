@@ -8,8 +8,10 @@ from argparse import ArgumentParser
 import os
 from typing import List
 from dataclasses import dataclass
+import numpy as np
 
 from src.models.supervised.random_forests import RandomForests
+from sklearn.ensemble import RandomForestClassifier
 from pytorch_lightning.callbacks import (
     LearningRateMonitor,
     ModelCheckpoint,
@@ -23,7 +25,9 @@ from src.models.supervised.satellite_module import ESDSegmentation
 
 import wandb
 
-# from lightning.pytorch.loggers import WandbLogger
+
+from lightning.pytorch.loggers import WandbLogger
+from sklearn.metrics import accuracy_score
 
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
@@ -132,9 +136,30 @@ def train(options: ESDConfig):
     # make sure to use the datamodule option
     trainer.fit(esd_segmentation, datamodule=esd_dm)
 
-    input_size = 224 * 224 * 3
-    rf_model = RandomForests(input_size=input_size, num_classes=4)
-    trainer.fit(rf_model, datamodule=esd_dm)
+    def extract_features(model, data_loader):
+        model.eval()
+        features_list = []
+        labels_list = []
+        with torch.no_grad():
+            for inputs, labels in data_loader:
+                features = model(inputs).cpu().numpy()
+                features_list.append(features)
+                labels_list.append(labels.numpy())
+        features = np.concatenate(features_list)
+        labels = np.concatenate(labels_list)
+        return features, labels
+
+    train_features, train_labels = extract_features(esd_segmentation.model, esd_dm.train_dataloader())
+    test_features, test_labels = extract_features(esd_segmentation.model, esd_dm.test_dataloader())
+
+    # Step 5: Train Random Forest classifier using extracted features
+    random_forest_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+    random_forest_classifier.fit(train_features, train_labels)
+
+    predictions = random_forest_classifier.predict(test_features)
+    accuracy = accuracy_score(test_labels, predictions)
+    print("Random Forest Classifier Accuracy:", accuracy)
+    
 
     
 
