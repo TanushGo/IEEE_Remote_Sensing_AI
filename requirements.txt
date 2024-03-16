@@ -1,0 +1,16 @@
+numpy
+matplotlib
+pyprojroot
+pydrive
+tifffile
+scipy
+gdown
+tqdm
+opencv-python
+umap-learn
+scikit-learn
+torch
+torchvision
+lightning
+rich
+wandb
