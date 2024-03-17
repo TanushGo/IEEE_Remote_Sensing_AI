@@ -32,6 +32,7 @@ from sklearn.metrics import accuracy_score
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
     torch.set_default_device('cuda')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 @dataclass
 class ESDConfig:
@@ -43,7 +44,7 @@ class ESDConfig:
     processed_dir: str | os.PathLike = root / 'data/processed/4x4'
     raw_dir: str | os.PathLike = root / 'data/raw/Train'
     selected_bands: None = None
-    model_type: str = "SegmentationCNN"
+    model_type: str = "FCNResnetTransfer"
     tile_size_gt: int = 4
     batch_size: int = 8
     max_epochs: int = 2
@@ -136,10 +137,10 @@ def train(options: ESDConfig):
 
     # run trainer.fit
     # make sure to use the datamodule option
-    trainer.fit(esd_segmentation, datamodule=esd_dm)
+    # trainer.fit(esd_segmentation, datamodule=esd_dm)
 
 
-    #model = ESDSegmentation.load_from_checkpoint(root / "models" / "RandomForests" / "last.ckpt")
+    model = ESDSegmentation.load_from_checkpoint(root / "models" / "FCNResnetTransfer" / "last.ckpt")
     
 
 
@@ -151,15 +152,15 @@ def train(options: ESDConfig):
             for inputs, labels, _ in data_loader:
                 # inputs, labels = 0,0
                 # print(l)
-                features = model(inputs.float()).cpu().numpy()
+                features = model(inputs.float().cpu().to(device)).cpu().numpy()
                 features_list.append(features)
-                labels_list.append(labels.numpy())
+                labels_list.append(labels.cpu().numpy())
         features = np.concatenate(features_list)
         labels = np.concatenate(labels_list)
         return features, labels
 
-    train_features, train_labels = extract_features(esd_segmentation.model, esd_dm.train_dataloader())
-    test_features, test_labels = extract_features(esd_segmentation.model, esd_dm.test_dataloader())
+    train_features, train_labels = extract_features(model, esd_dm.train_dataloader())
+    test_features, test_labels = extract_features(model, esd_dm.val_dataloader())
 
     # Step 5: Train Random Forest classifier using extracted features
     print("training")
