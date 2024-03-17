@@ -44,12 +44,12 @@ class ESDConfig:
     processed_dir: str | os.PathLike = root / 'data/processed/4x4'
     raw_dir: str | os.PathLike = root / 'data/raw/Train'
     selected_bands: None = None
-    model_type: str = "FCNResnetTransfer"
+    model_type: str = "SegmentationCNN"
     tile_size_gt: int = 4
-    batch_size: int = 8
-    max_epochs: int = 2
+    batch_size: int = 31
+    max_epochs: int = 1
     seed: int = 12378921
-    learning_rate: float = 0.00030
+    learning_rate: float = 0.0001584
     num_workers: int = 11
     accelerator: str = "gpu"
     devices: int = 1
@@ -121,71 +121,64 @@ def train(options: ESDConfig):
         RichModelSummary(max_depth=3),
     ]
 
-    # esd_segmentation.randForest =  RandomForestClassifier(
-    #         n_estimators=100, max_depth=5
-    #     )
-    
-    # esd_segmentation.randForest
-
     # create a pytorch_lightning Trainer
     # make sure to use the options object to load it with the correct options
 
     # First trainer for GPU usage, second for without
     torch.set_float32_matmul_precision('medium')
-    #trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
     # run trainer.fit
     # make sure to use the datamodule option
-    # trainer.fit(esd_segmentation, datamodule=esd_dm)
+    trainer.fit(esd_segmentation, datamodule=esd_dm)
+    # model = ESDSegmentation.load_from_checkpoint(root / "models" / "FCNResnetTransfer" / "last.ckpt")
 
 
-    model = ESDSegmentation.load_from_checkpoint(root / "models" / "FCNResnetTransfer" / "last.ckpt")
-    
+    # def extract_features(model, data_loader):
+    #     # resnet_features = torch.nn.Sequential(*list(model.children())[:-1])
+    #     print(model)
+    #     resnet_features = model.model.backbone
+    #     model.eval()
+    #     resnet_features.eval()
+    #     features_list = []
+    #     labels_list = []
+    #     with torch.no_grad():
+    #         for inputs, labels, _ in data_loader:
+    #             #features = model(inputs.float().to(device)).cpu()#.numpy()
+    #             # print(type(features))
+    #             features = resnet_features(inputs.float().to(device)).cpu()
+    #             print(f"Features are {features.shape}")
+    #             flattened_features = torch.permute(features,(1,0,2,3)).reshape(-1, features.shape[1])#.transpose(1, 0)
 
 
-    def extract_features(model, data_loader):
-        # resnet_features = torch.nn.Sequential(*list(model.children())[:-1])
-        resnet_features = model.backbone
-        model.eval()
-        resnet_features.eval()
-        features_list = []
-        labels_list = []
-        with torch.no_grad():
-            for inputs, labels, _ in data_loader:
-                #features = model(inputs.float().to(device)).cpu()#.numpy()
-                # print(type(features))
-                features = resnet_features(inputs.float().to(device)).cpu()
-                print(f"Features are {features.shape}")
-                flattened_features = torch.permute(features,(1,0,2,3)).reshape(-1, features.shape[1])#.transpose(1, 0)
+    #             # print(flattened_features.shape)
+    #             features_list.append(flattened_features.numpy())
+    #             labels_flatten = labels.flatten()
+    #             print("labels flatten shape",labels_flatten.shape)
+    #             print("labels",labels.shape)
+    #             labels_list.append(labels_flatten.cpu().numpy())
 
+    #     features = np.concatenate(features_list)
+    #     labels = np.concatenate(labels_list)
+    #     print(features.shape)
+    #     print(labels.shape)
+    #     train_class = list(np.unique(labels))
+    #     print(train_class)
+    #     return features, labels
 
-                # print(flattened_features.shape)
-                features_list.append(flattened_features.numpy())
-                labels_flatten = labels.flatten()
-                print("labels flatten shape",labels_flatten.shape)
-                print("labels",labels.shape)
-                labels_list.append(labels_flatten.cpu().numpy())
+    # train_features, train_labels = extract_features(model, esd_dm.train_dataloader())
+    # test_features, test_labels = extract_features(model, esd_dm.val_dataloader())
 
-        features = np.concatenate(features_list)
-        labels = np.concatenate(labels_list)
-        print(features.shape)
-        print(labels.shape)
-        train_class = list(np.unique(labels))
-        print(train_class)
-        return features, labels
+    # # Step 5: Train Random Forest classifier using extracted features
+    # print("training")
+    # random_forest_classifier = RandomForestClassifier(n_estimators=500, criterion="log_loss", random_state=42, max_features=4,
+    #                                                   min_samples_leaf=100)
+    # random_forest_classifier.fit(train_features, train_labels)
 
-    train_features, train_labels = extract_features(model, esd_dm.train_dataloader())
-    test_features, test_labels = extract_features(model, esd_dm.val_dataloader())
-
-    # Step 5: Train Random Forest classifier using extracted features
-    print("training")
-    random_forest_classifier = RandomForestClassifier(n_estimators=35, criterion="gini", random_state=42, max_features=4)
-    random_forest_classifier.fit(train_features, train_labels)
-
-    predictions = random_forest_classifier.predict(test_features)
-    accuracy = accuracy_score(test_labels, predictions)
-    print("Random Forest Classifier Accuracy:", accuracy)
+    # predictions = random_forest_classifier.predict(test_features)
+    # accuracy = accuracy_score(test_labels, predictions)
+    # print("Random Forest Classifier Accuracy:", accuracy)
     
 
     
