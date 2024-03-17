@@ -120,7 +120,10 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
         for j in range(*range_y):
             subtile = Subtile().load(dir / 'subtiles' / f"{tile_id}_{i}_{j}.npz")
             # find the tile in the datamodule
-
+            '''
+            combine the train and val datasets from the datamodule. iterate through it. each iteration outputs an X, y, 
+            and tilemetadata (look at collate_fn). check if it's the tile you're looking for using tilemetadata.
+            '''
             # evaluate the tile with the model
             # You need to add a dimension of size 1 at dim 0 so that
             # some CNN layers work
