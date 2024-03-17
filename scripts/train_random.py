@@ -145,13 +145,17 @@ def train(options: ESDConfig):
 
 
     def extract_features(model, data_loader):
+        resnet_features = torch.nn.Sequential(*list(model.children())[:-1])
         model.eval()
+        resnet_features.eval()
         features_list = []
         labels_list = []
         with torch.no_grad():
             for inputs, labels, _ in data_loader:
                 features = model(inputs.float().to(device)).cpu()#.numpy()
                 # print(type(features))
+                #features = resnet_features(inputs.float().to(device)).cpu()
+                print(f"Features are {features.shape}")
                 flattened_features = torch.permute(features,(1,0,2,3)).reshape(-1, features.shape[1])#.transpose(1, 0)
 
 
