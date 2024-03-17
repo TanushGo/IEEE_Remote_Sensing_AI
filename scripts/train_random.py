@@ -152,9 +152,9 @@ def train(options: ESDConfig):
         labels_list = []
         with torch.no_grad():
             for inputs, labels, _ in data_loader:
-                features = model(inputs.float().to(device)).cpu()#.numpy()
+                #features = model(inputs.float().to(device)).cpu()#.numpy()
                 # print(type(features))
-                #features = resnet_features(inputs.float().to(device)).cpu()
+                features = resnet_features(inputs.float().to(device)).cpu()
                 print(f"Features are {features.shape}")
                 flattened_features = torch.permute(features,(1,0,2,3)).reshape(-1, features.shape[1])#.transpose(1, 0)
 
@@ -162,8 +162,10 @@ def train(options: ESDConfig):
                 # print(flattened_features.shape)
                 features_list.append(flattened_features.numpy())
                 labels_flatten = labels.flatten()
-                # print(labels_flatten.shape)
+                print("labels flatten shape",labels_flatten.shape)
+                print("labels",labels.shape)
                 labels_list.append(labels_flatten.cpu().numpy())
+
         features = np.concatenate(features_list)
         labels = np.concatenate(labels_list)
         print(features.shape)
