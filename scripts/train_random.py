@@ -137,17 +137,10 @@ def train(options: ESDConfig):
 
     # run trainer.fit
     # make sure to use the datamodule option
-<<<<<<< HEAD
-    #trainer.fit(esd_segmentation, datamodule=esd_dm)
-
-
-    model = ESDSegmentation.load_from_checkpoint(root / "models" / "RandomForests" / "last.ckpt")
-=======
     # trainer.fit(esd_segmentation, datamodule=esd_dm)
 
 
     model = ESDSegmentation.load_from_checkpoint(root / "models" / "FCNResnetTransfer" / "last.ckpt")
->>>>>>> 7759ccebacaff1ddf7b6b14d094cd1eccb959525
     
 
 
@@ -157,8 +150,7 @@ def train(options: ESDConfig):
         labels_list = []
         with torch.no_grad():
             for inputs, labels, _ in data_loader:
-<<<<<<< HEAD
-                features = model(inputs.float()).cpu()#.numpy()
+                features = model(inputs.float().to(device)).cpu()#.numpy()
                 # print(type(features))
                 flattened_features = torch.permute(features,(1,0,2,3)).reshape(-1, features.shape[1])#.transpose(1, 0)
 
@@ -167,28 +159,21 @@ def train(options: ESDConfig):
                 features_list.append(flattened_features.numpy())
                 labels_flatten = labels.flatten()
                 # print(labels_flatten.shape)
-                labels_list.append(labels_flatten.numpy())
-=======
-                # inputs, labels = 0,0
-                # print(l)
-                features = model(inputs.float().cpu().to(device)).cpu().numpy()
-                features_list.append(features)
-                labels_list.append(labels.cpu().numpy())
->>>>>>> 7759ccebacaff1ddf7b6b14d094cd1eccb959525
+                labels_list.append(labels_flatten.cpu().numpy())
         features = np.concatenate(features_list)
         labels = np.concatenate(labels_list)
+        print(features.shape)
+        print(labels.shape)
+        train_class = list(np.unique(labels))
+        print(train_class)
         return features, labels
 
     train_features, train_labels = extract_features(model, esd_dm.train_dataloader())
-<<<<<<< HEAD
-    test_features, test_labels = extract_features(model, esd_dm.test_dataloader())
-=======
     test_features, test_labels = extract_features(model, esd_dm.val_dataloader())
->>>>>>> 7759ccebacaff1ddf7b6b14d094cd1eccb959525
 
     # Step 5: Train Random Forest classifier using extracted features
     print("training")
-    random_forest_classifier = RandomForestClassifier(n_estimators=300, criterion="log_loss", random_state=42)
+    random_forest_classifier = RandomForestClassifier(n_estimators=35, criterion="gini", random_state=42, max_features=4)
     random_forest_classifier.fit(train_features, train_labels)
 
     predictions = random_forest_classifier.predict(test_features)
