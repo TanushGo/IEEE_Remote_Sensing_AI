@@ -145,7 +145,8 @@ def train(options: ESDConfig):
 
 
     def extract_features(model, data_loader):
-        resnet_features = torch.nn.Sequential(*list(model.children())[:-1])
+        # resnet_features = torch.nn.Sequential(*list(model.children())[:-1])
+        resnet_features = model.backbone
         model.eval()
         resnet_features.eval()
         features_list = []
