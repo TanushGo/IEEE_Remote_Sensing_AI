@@ -1,6 +1,7 @@
 import pyprojroot
 import sys
 import os
+import re
 
 root = pyprojroot.here()
 sys.path.append(str(root))
@@ -33,13 +34,13 @@ import tifffile
 class EvalConfig:
     processed_dir: str | os.PathLike = root / "data/processed/4x4"
     raw_dir: str | os.PathLike = root / "data/raw/Train"
-    results_dir: str | os.PathLike = root / "data/predictions" / "FCNResnetTransfer"
+    results_dir: str | os.PathLike = root / "data/predictions" / "SegmentationCNN"
     selected_bands: None = None
     tile_size_gt: int = 4
     batch_size: int = 8
     seed: int = 12378921
     num_workers: int = 11
-    model_path: str | os.PathLike = root / "models" / "FCNResnetTransfer" / "last.ckpt"
+    model_path: str | os.PathLike = root / "models" / "SegmentationCNN" / "last.ckpt"
 
 
 def main(options):
@@ -50,23 +51,20 @@ def main(options):
         options: EvalConfig
             options for the experiment
     """
-    # load datamodule
     datamodule = ESDDataModule(
         processed_dir=options.processed_dir,
         raw_dir=options.raw_dir,
         selected_bands=options.selected_bands,
         tile_size_gt=options.tile_size_gt,
         batch_size=options.batch_size,
-        seed=options.seed
+        seed=options.seed,
     )
     datamodule.prepare_data()
     datamodule.setup(stage="fit")
 
-    # load model from checkpoint and set to evaluation mode with model.eval()
     model = ESDSegmentation.load_from_checkpoint(checkpoint_path=options.model_path)
     model.eval()
 
-    # pytorch_lightning trainer and validation loop
     trainer = pl.Trainer(
         callbacks=[
             LearningRateMonitor(),
@@ -76,14 +74,19 @@ def main(options):
         ],
         logger=False,  # Disable logging to avoid unnecessary output
     )
-    trainer.validate(model, datamodule=datamodule)
+
+    # trainer.validate(model, datamodule=datamodule)
 
     # Assuming a method to get validation tile IDs from the datamodule
-    tiles = [file for file in Path(options.processed_dir/'4'/'Val'/'subtiles').rglob('*.npz')]
+    val_tile_ids = set()
+    for path in Path(options.processed_dir / "4" / "Val" / "subtiles").rglob("*.npz"):
+        id = re.split("(Tile\d+)", str(path))[1]
+        val_tile_ids.add(id)
 
-    for parent_tile_id in tiles:
+    val_tile_ids = sorted(list(val_tile_ids))
 
-        # run restitch and plot
+    for parent_tile_id in val_tile_ids:
+        # Use restitch_and_plot for visualization
         restitch_and_plot(
             options,
             datamodule,
@@ -91,7 +94,7 @@ def main(options):
             parent_tile_id,
             satellite_type="sentinel2",
             rgb_bands=[3, 2, 1],
-            image_dir=options.results_dir
+            image_dir=options.results_dir,
         )
 
         stitched_image, stitched_ground_truth, stitched_predictions, metadata = (
@@ -112,22 +115,35 @@ def main(options):
             stitched_predictions,
         )
 
-        # freebie: plots the predicted image as a jpeg with the correct colors
         # Plot and save predictions as PNG
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list("Settlements", np.array(['#ff0000', '#0000ff', '#ffff00', '#b266ff']), N=4)
-        fig, ax = plt.subplots(nrows=1, ncols=1)
+        cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
+            "Settlements", ["#ff0000", "#0000ff", "#ffff00", "#b266ff"], N=4
+        )
+        fig, ax = plt.subplots()
         ax.imshow(stitched_predictions, vmin=-0.5, vmax=3.5, cmap=cmap)
-        plt.savefig(options.results_dir / f"{parent_tile_id}.png")
+        plt.savefig(Path(options.results_dir) / f"{parent_tile_id}_prediction.png")
         plt.close(fig)
 
 
 if __name__ == "__main__":
+
     config = EvalConfig()
     parser = ArgumentParser()
 
-    parser.add_argument("--model_path", type=str, help="Model path.", default=config.model_path)
-    parser.add_argument("--raw_dir", type=str, default=config.raw_dir, help="Path to raw directory")
-    parser.add_argument("-p", "--processed_dir",type=str,default=config.processed_dir,help="Path to processed directory",)
-    parser.add_argument("--results_dir", type=str, default=config.results_dir, help="Results directory")
-
+    parser.add_argument(
+        "--model_path", type=str, help="Model path.", default=config.model_path
+    )
+    parser.add_argument(
+        "--raw_dir", type=str, default=config.raw_dir, help="Path to raw directory"
+    )
+    parser.add_argument(
+        "-p",
+        "--processed_dir",
+        type=str,
+        default=config.processed_dir,
+        help="Path to processed directory",
+    )
+    parser.add_argument(
+        "--results_dir", type=str, default=config.results_dir, help="Results directory"
+    )
     main(EvalConfig(**parser.parse_args().__dict__))
