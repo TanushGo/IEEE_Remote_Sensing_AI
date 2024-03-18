@@ -87,6 +87,17 @@ def main(options):
     val_tile_ids = sorted(list(val_tile_ids))
     print(val_tile_ids)
 
+            # Use restitch_and_plot for visualization
+    restitch_and_plot(
+        options,
+        datamodule,
+        model,
+        "Tile40",
+        satellite_type="sentinel2",
+        rgb_bands=[3, 2, 1],
+        image_dir=options.results_dir,
+    )
+
     for parent_tile_id in val_tile_ids:
         # Use restitch_and_plot for visualization
         # restitch_and_plot(
