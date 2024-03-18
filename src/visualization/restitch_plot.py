@@ -165,8 +165,8 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
     ground_truth_subtile_row.append(y_label)
     predictions_subtile = np.concatenate(predictions, axis=0)
     predictions_subtile = np.reshape(predictions_subtile, (4, 16, 16))
-    predictions_subtile = np.amax(predictions_subtile, axis=0)
-    predictions_subtile = predictions_subtile.reshape(16, 16)
+    predictions_subtile = np.argmax(predictions_subtile, axis=0)
+    # predictions_subtile = predictions_subtile.reshape(16, 16)
 
 
 

@@ -110,7 +110,9 @@ def main(options):
                 model=model,
             )
         )
-        print(stitched_predictions)
+        print("pred",stitched_predictions)
+
+        print("gti",stitched_ground_truth)
 
         # Save predictions as TIFF
         tifffile.imwrite(
