@@ -25,8 +25,6 @@ from src.models.supervised.satellite_module import ESDSegmentation
 
 import wandb
 
-
-from lightning.pytorch.loggers import WandbLogger
 from sklearn.metrics import accuracy_score
 
 torch.set_default_dtype(torch.float32)
@@ -76,13 +74,16 @@ def train(options: ESDConfig):
 
     # Initialize the weights and biases logger
     wandb.init(project="RandomForests", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = WandbLogger(project="RandomForests")
+    wandb_logger = pl.loggers.WandbLogger(project="RandomForests")
 
     # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="FCNR")
+    # wandb_logger = pl.loggers.WandbLogger(project="FCNR")
 
     # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="UNET")
+    # wandb_logger = pl.loggers.WandbLogger(project="UNET")
+
+    # wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
+    # wandb_logger = pl.loggers.WandbLogger(project="CNN")
     
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly

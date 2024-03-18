@@ -46,7 +46,7 @@ def collate_fn(batch):
 
     # Xs = np.stack(Xs)
     # ys = np.stack(ys)
-    return torch.stack(Xs), torch.stack(ys), metadatas
+    return torch.stack(Xs).to(dtype=torch.float32), torch.stack(ys).to(dtype=torch.float32), metadatas
 
 
 class ESDDataModule(pl.LightningDataModule):
@@ -167,58 +167,6 @@ class ESDDataModule(pl.LightningDataModule):
 
         return satellite_stack, satellite_metadata
 
-    # def prepare_data(self):
-    #     """
-    #     If the data has not been processed before (denoted by whether or not self.processed_dir is an existing directory)
-
-    #     For each tile,
-    #         - load and preprocess the data in the tile
-    #         - grid slice the data
-    #         - for each resulting subtile
-    #             - save the subtile data to self.processed_dir
-    #     """
-    #     # if the processed_dir does not exist, process the data and create
-    #     # subtiles of the parent image to save
-    #     if not os.path.exists(self.processed_dir):
-
-    #         # fetch all the parent images in the raw_dir
-    #         # for each parent image in the raw_dir
-    #         for img in Path(self.raw_dir).glob("*"):
-
-    #             # call __load_and_preprocess to load and preprocess the data for all satellite types
-    #             satellite_stack, satellite_metadata = self.__load_and_preprocess(img)
-
-    #             # grid slice the data with the given tile_size_gt
-    #             subtile_stack = grid_slice(
-    #                 satellite_stack, satellite_metadata, self.tile_size_gt
-    #             )
-
-    #             # save each subtile
-    #             for subtile in subtile_stack:
-    #                 subtile.save(self.processed_dir)
-
-    # def setup(self, stage: str):
-    #     """
-    #     Create self.train_dataset and self.val_dataset.0000ff
-
-    #     Hint: Use torch.utils.data.random_split to split the Train
-    #     directory loaded into the PyTorch dataset DSE into an 80% training
-    #     and 20% validation set. Set the seed to 1024.
-    #     """
-
-    #     # if the stage is "fit", load the data from the processed_dir
-    #     if stage == "fit":
-    #         # load the data from the processed_dir
-    #         # and split the data into 80% training and 20% validation
-    #         # set the seed to 1024
-
-    #         dataset = DSE(self.processed_dir, transform=self.transform)
-    #         train_size = int(0.8 * len(dataset))
-    #         val_size = len(dataset) - train_size
-    #         self.train_dataset, self.val_dataset = random_split(
-    #             dataset, [train_size, val_size], generator=Generator().manual_seed(1024)
-    #         )
-
     def train_dataloader(self):
         """
         Create and return a torch.utils.data.DataLoader with
@@ -238,10 +186,6 @@ class ESDDataModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(
             self.val_dataset, batch_size=self.batch_size, collate_fn=collate_fn
         )
-
-
-
-
 
 # THINGS TO CHANGE: 
 
