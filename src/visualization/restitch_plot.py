@@ -122,21 +122,9 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
         satellite_metadata_from_subtile_row = []
         for j in range(*range_y):
             subtile = Subtile().load(dir/ "4" / "Val" / "subtiles"/ f"{tile_id}_{i}_{j}.npz")
-            y_label = []
-            predictions = []
-            # find the tile in the datamodule
-            for x,y, meta in datamodule.train_dataloader():
-                if meta[0].parent_tile_id == tile_id:
-                    with torch.no_grad():
-                        y_label = y.cpu().numpy()
-                        predictions = model(x.float().to(device)).cpu().numpy()
             
-            for x,y, meta in datamodule.val_dataloader():
-                if meta[0].parent_tile_id == tile_id:
-                    with torch.no_grad():
-                        y_label = y.cpu().numpy()
-                        predictions = model(x.float().to(device)).cpu().numpy()
-
+            # find the tile in the datamodule
+            
             # evaluate the tile with the model
             # You need to add a dimension of size 1 at dim 0 so that
             # some CNN layers work
@@ -145,13 +133,46 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
 
             # convert y to numpy array
             # detach predictions from the gradient, move to cpu and convert to numpy
-
-            ground_truth_subtile_row.append(y_label)
-            predictions_subtile_row.append(predictions)
+     
             satellite_subtile_row.append(subtile.satellite_stack[satellite_type])
-            satellite_metadata_from_subtile_row.append(subtile.tile_metadata)
-        ground_truth_subtile.append(np.concatenate(ground_truth_subtile_row, axis=-1))
-        predictions_subtile.append(np.concatenate(predictions_subtile_row, axis=-1))
+            satellite_metadata_from_subtile_row.append(subtile.tile_metadata)   
+        
         satellite_subtile.append(np.concatenate(satellite_subtile_row, axis=-1))
         satellite_metadata_from_subtile.append(satellite_metadata_from_subtile_row)
-    return np.concatenate(satellite_subtile, axis=-2), np.concatenate(ground_truth_subtile, axis=-2), np.concatenate(predictions_subtile, axis=-2)
+
+    y_label = []
+    predictions = []
+    for x,y,data in datamodule.train_dataloader():
+        for i in range(len(data)):
+            if data[i].parent_tile_id == tile_id:
+                # print(x)
+                print("train")
+                with torch.no_grad():
+                    y_label.append(y[i].unsqueeze(0).cpu().numpy())
+                    predictions.append(model(x[i].unsqueeze(0).float().to(device)).cpu().numpy())
+    
+    for x,y,data in datamodule.val_dataloader():
+        for i in range(len(data)):
+            if data[i].parent_tile_id == tile_id:
+            # print(x)
+                print("val")
+                with torch.no_grad():
+                    y_label.append(y[i].unsqueeze(0).cpu().numpy())
+                    predictions.append(model(x[i].unsqueeze(0).float().to(device)).cpu().numpy())
+
+    print(y_label[0].shape, y_label[1].shape)
+    print(predictions[0], predictions[1])
+    ground_truth_subtile_row.append(y_label)
+    predictions_subtile = np.concatenate(predictions, axis=0)
+    predictions_subtile = np.reshape(predictions_subtile, (4, 16, 16))
+    predictions_subtile = np.amax(predictions_subtile, axis=0)
+    predictions_subtile = predictions_subtile.reshape(16, 16)
+
+
+
+    ground_truth_subtile = np.concatenate(y_label, axis=0)
+    ground_truth_subtile = np.reshape(ground_truth_subtile, ( 16, 16))
+
+    # ground_truth_subtile.append(np.concatenate(ground_truth_subtile_row, axis=-1))
+    # predictions_subtile.append(np.concatenate(predictions_subtile_row, axis=-1))
+    return np.concatenate(satellite_subtile, axis=-2), ground_truth_subtile, predictions_subtile

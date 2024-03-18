@@ -34,7 +34,7 @@ import tifffile
 class EvalConfig:
     processed_dir: str | os.PathLike = root / "data/processed/4x4"
     raw_dir: str | os.PathLike = root / "data/raw/Train"
-    results_dir: str | os.PathLike = root / "data/predictions" / "Random"
+    results_dir: str | os.PathLike = root / "data" / "predictions" / "FCNR"
     selected_bands: None = None
     tile_size_gt: int = 4
     batch_size: int = 8
@@ -99,7 +99,7 @@ def main(options):
         #     image_dir=options.results_dir,
         # )
 
-        stitched_image, stitched_ground_truth, stitched_predictions, metadata = (
+        stitched_image, stitched_ground_truth, stitched_predictions = (
             restitch_eval(
                 dir=options.processed_dir,
                 satellite_type="sentinel2",
@@ -110,6 +110,7 @@ def main(options):
                 model=model,
             )
         )
+        print(stitched_predictions)
 
         # Save predictions as TIFF
         tifffile.imwrite(
@@ -125,6 +126,11 @@ def main(options):
         ax.imshow(stitched_predictions, vmin=-0.5, vmax=3.5, cmap=cmap)
         plt.savefig(Path(options.results_dir) / f"{parent_tile_id}_prediction.png")
         plt.close(fig)
+
+        figs, axes = plt.subplots()
+        axes.imshow(stitched_ground_truth, vmin=-0.5, vmax=3.5, cmap=cmap)
+        plt.savefig(Path(options.results_dir) / f"{parent_tile_id}_gt.png")
+        plt.close(figs)
 
 
 if __name__ == "__main__":
