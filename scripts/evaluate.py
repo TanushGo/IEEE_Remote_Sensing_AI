@@ -34,13 +34,13 @@ import tifffile
 class EvalConfig:
     processed_dir: str | os.PathLike = root / "data/processed/4x4"
     raw_dir: str | os.PathLike = root / "data/raw/Train"
-    results_dir: str | os.PathLike = root / "data/predictions" / "SegmentationCNN"
+    results_dir: str | os.PathLike = root / "data/predictions" / "Random"
     selected_bands: None = None
     tile_size_gt: int = 4
     batch_size: int = 8
     seed: int = 12378921
     num_workers: int = 11
-    model_path: str | os.PathLike = root / "models" / "SegmentationCNN" / "last.ckpt"
+    model_path: str | os.PathLike = root / "models" / "RandomForests" / "last.ckpt"
 
 
 def main(options):
@@ -83,27 +83,29 @@ def main(options):
         id = re.split("(Tile\d+)", str(path))[1]
         val_tile_ids.add(id)
 
+    
     val_tile_ids = sorted(list(val_tile_ids))
+    print(val_tile_ids)
 
     for parent_tile_id in val_tile_ids:
         # Use restitch_and_plot for visualization
-        restitch_and_plot(
-            options,
-            datamodule,
-            model,
-            parent_tile_id,
-            satellite_type="sentinel2",
-            rgb_bands=[3, 2, 1],
-            image_dir=options.results_dir,
-        )
+        # restitch_and_plot(
+        #     options,
+        #     datamodule,
+        #     model,
+        #     parent_tile_id,
+        #     satellite_type="sentinel2",
+        #     rgb_bands=[3, 2, 1],
+        #     image_dir=options.results_dir,
+        # )
 
         stitched_image, stitched_ground_truth, stitched_predictions, metadata = (
             restitch_eval(
                 dir=options.processed_dir,
                 satellite_type="sentinel2",
                 tile_id=parent_tile_id,
-                range_x=(0, 5),  # Example ranges, adjust as necessary
-                range_y=(0, 5),
+                range_x=(0, 4),  # Example ranges, adjust as necessary
+                range_y=(0, 4),
                 datamodule=datamodule,
                 model=model,
             )

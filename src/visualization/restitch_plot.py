@@ -6,8 +6,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from src.preprocessing.subtile_esd_hw02 import TileMetadata, Subtile, restitch
 from src.preprocessing.file_utils import load_satellite
-from src.visualization.plot_utils import plot_ground_truth
+
 import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def restitch_and_plot(options, datamodule, model, parent_tile_id, satellite_type="sentinel2", rgb_bands=[4, 3, 2],
                       image_dir: None | str | os.PathLike = None):
@@ -59,7 +61,7 @@ def restitch_and_plot(options, datamodule, model, parent_tile_id, satellite_type
     #     im = model((options.batch_size, 99, restitched_img[0][0]))
     # axs[2].set_title(f"predicted ground truth")
     # axs[2].imshow(im[0][0], cmap=cmap, vmin=-0.5, vmax=3.5)
-
+    im  = []
     # The following lines sets up the colorbar to the right of the images
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
@@ -73,15 +75,13 @@ def restitch_and_plot(options, datamodule, model, parent_tile_id, satellite_type
         plt.close()
 
 
-def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, range_x: Tuple[int, int],
-                  range_y: Tuple[int, int], datamodule, model) -> np.ndarray:
+def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, range_x: Tuple[int, int], range_y: Tuple[int, int], datamodule, model) -> np.ndarray:
     """
-    Given a directory of processed subtiles, a tile_id and a satellite_type,
+    Given a directory of processed subtiles, a tile_id and a satellite_type, 
     this function will retrieve the tiles between (range_x[0],range_y[0])
     and (range_x[1],range_y[1]) in order to stitch them together to their
     original image. It will also get the tiles from the datamodule, evaluate
     it with model, and stitch the ground truth and predictions together.
-
     Input:
         dir: str | os.PathLike
             Directory where the subtiles are saved
@@ -97,7 +97,7 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
             Datamodule with the dataset
         model: pytorch_lightning.LightningModule
             LightningModule that will be evaluated
-
+    
     Output:
         stitched_image: np.ndarray
             Stitched image, of shape (time, bands, width, height)
@@ -112,14 +112,30 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
     ground_truth_subtile = []
     predictions_subtile = []
     satellite_metadata_from_subtile = []
+    # nt = iter(datamodule.train_dataloader())
+    # print(next(nt)[2][0].parent_tile_id)
+    # print([datamodule.val_dataloader()])
     for i in range(*range_x):
         satellite_subtile_row = []
         ground_truth_subtile_row = []
         predictions_subtile_row = []
         satellite_metadata_from_subtile_row = []
         for j in range(*range_y):
-            subtile = Subtile().load(dir / 'subtiles' / f"{tile_id}_{i}_{j}.npz")
+            subtile = Subtile().load(dir/ "4" / "Val" / "subtiles"/ f"{tile_id}_{i}_{j}.npz")
+            y_label = []
+            predictions = []
             # find the tile in the datamodule
+            for x,y, meta in datamodule.train_dataloader():
+                if meta[0].parent_tile_id == tile_id:
+                    with torch.no_grad():
+                        y_label = y.cpu().numpy()
+                        predictions = model(x.float().to(device)).cpu().numpy()
+            
+            for x,y, meta in datamodule.val_dataloader():
+                if meta[0].parent_tile_id == tile_id:
+                    with torch.no_grad():
+                        y_label = y.cpu().numpy()
+                        predictions = model(x.float().to(device)).cpu().numpy()
 
             # evaluate the tile with the model
             # You need to add a dimension of size 1 at dim 0 so that
@@ -130,7 +146,7 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
             # convert y to numpy array
             # detach predictions from the gradient, move to cpu and convert to numpy
 
-            ground_truth_subtile_row.append(y)
+            ground_truth_subtile_row.append(y_label)
             predictions_subtile_row.append(predictions)
             satellite_subtile_row.append(subtile.satellite_stack[satellite_type])
             satellite_metadata_from_subtile_row.append(subtile.tile_metadata)
@@ -138,5 +154,4 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
         predictions_subtile.append(np.concatenate(predictions_subtile_row, axis=-1))
         satellite_subtile.append(np.concatenate(satellite_subtile_row, axis=-1))
         satellite_metadata_from_subtile.append(satellite_metadata_from_subtile_row)
-    return np.concatenate(satellite_subtile, axis=-2), np.concatenate(ground_truth_subtile, axis=-2), np.concatenate(
-        predictions_subtile, axis=-2)
+    return np.concatenate(satellite_subtile, axis=-2), np.concatenate(ground_truth_subtile, axis=-2), np.concatenate(predictions_subtile, axis=-2)
