@@ -73,8 +73,8 @@ def train(options: ESDConfig):
     #     torch.set_default_device('cuda')
 
     # Initialize the weights and biases logger
-    wandb.init(project="RandomForests", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = pl.loggers.WandbLogger(project="RandomForests")
+    # wandb.init(project="RandomForests", name=options.wandb_run_name, config=options.__dict__)
+    # wandb_logger = pl.loggers.WandbLogger(project="RandomForests")
 
     # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = pl.loggers.WandbLogger(project="FCNR")
@@ -82,8 +82,8 @@ def train(options: ESDConfig):
     # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = pl.loggers.WandbLogger(project="UNET")
 
-    # wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = pl.loggers.WandbLogger(project="CNN")
+    wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = pl.loggers.WandbLogger(project="CNN")
     
     # initiate the ESDDatamodule
     # use the options object to initiate the datamodule correctly
@@ -137,29 +137,29 @@ def train(options: ESDConfig):
     # make sure to use the datamodule option
     trainer.fit(esd_segmentation, datamodule=esd_dm)
 
-    def extract_features(model, data_loader):
-        model.eval()
-        features_list = []
-        labels_list = []
-        with torch.no_grad():
-            for inputs, labels in data_loader:
-                features = model(inputs).cpu().numpy()
-                features_list.append(features)
-                labels_list.append(labels.numpy())
-        features = np.concatenate(features_list)
-        labels = np.concatenate(labels_list)
-        return features, labels
+    # def extract_features(model, data_loader):
+    #     model.eval()
+    #     features_list = []
+    #     labels_list = []
+    #     with torch.no_grad():
+    #         for inputs, labels in data_loader:
+    #             features = model(inputs).cpu().numpy()
+    #             features_list.append(features)
+    #             labels_list.append(labels.numpy())
+    #     features = np.concatenate(features_list)
+    #     labels = np.concatenate(labels_list)
+    #     return features, labels
 
-    train_features, train_labels = extract_features(esd_segmentation.model, esd_dm.train_dataloader())
-    test_features, test_labels = extract_features(esd_segmentation.model, esd_dm.test_dataloader())
+    # train_features, train_labels = extract_features(esd_segmentation.model, esd_dm.train_dataloader())
+    # test_features, test_labels = extract_features(esd_segmentation.model, esd_dm.test_dataloader())
 
-    # Step 5: Train Random Forest classifier using extracted features
-    random_forest_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-    random_forest_classifier.fit(train_features, train_labels)
+    # # Step 5: Train Random Forest classifier using extracted features
+    # random_forest_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+    # random_forest_classifier.fit(train_features, train_labels)
 
-    predictions = random_forest_classifier.predict(test_features)
-    accuracy = accuracy_score(test_labels, predictions)
-    print("Random Forest Classifier Accuracy:", accuracy)
+    # predictions = random_forest_classifier.predict(test_features)
+    # accuracy = accuracy_score(test_labels, predictions)
+    # print("Random Forest Classifier Accuracy:", accuracy)
     
 
     
