@@ -28,19 +28,19 @@ def restitch_and_plot(options, datamodule, model, parent_tile_id, satellite_type
                                                                np.array(['#ff0000', '#0000ff', '#ffff00', '#b266ff']),
                                                                N=4)
 
-    fig, axs = plt.subplots(nrows=1, ncols=3)
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(20, 20))
 
-    subtile_dir = Path(os.path.join(options.processed_dir, "4/Val/subtiles"))
-    restitched_img, metadata = restitch(subtile_dir, satellite_type, parent_tile_id, (0, 4), (0, 4))
-
-    satellite_bands = metadata[0][0].satellites[satellite_type].bands
-    bands_index = []
-    bands = ["04", "03", "02"]
-    for b in bands:
-        bands_index.append(satellite_bands.index(b))
+    # subtile_dir = Path(os.path.join(options.processed_dir, "4/Val/subtiles"))
+    restitched_img, stitched_gt, stitched_pred = restitch_eval(options.processed_dir,satellite_type,parent_tile_id,range_x=(0, 4),range_y=(0, 4),datamodule=datamodule,model=model)
+    # satellite_bands = metadata[0][0].satellites[satellite_type].bands
+    # bands_index = []
+    # bands = ["04", "03", "02"]
+    # for b in bands:
+    #     bands_index.append(satellite_bands.index(b))
 
     axs[0].set_title(f"{parent_tile_id} restitched")
-    axs[0].imshow(np.transpose(restitched_img[0, bands_index, :, :], axes=(1,2,0)), cmap=cmap, vmin=-0.5, vmax=3.5)
+    axs[0].imshow(np.dstack([restitched_img[0,rgb_bands[0],:,:], restitched_img[0,rgb_bands[1],:,:], restitched_img[0,rgb_bands[2],:,:]]))
+    
 
     # make sure to use cmap=cmap, vmin=-0.5 and vmax=3.5 when running
     # axs[i].imshow on the 1d images in order to have the correct
@@ -49,19 +49,20 @@ def restitch_and_plot(options, datamodule, model, parent_tile_id, satellite_type
     # `im`, i.e, im = axs[i].imshow
 
     # use file_utils and plot utils to plot ground truth
-    gt_dir = Path(datamodule.raw_dir / parent_tile_id)
-    gt_arr = load_satellite(gt_dir, "gt")
+    # gt_dir = Path(datamodule.raw_dir / parent_tile_id)
+    # gt_arr = load_satellite(gt_dir, "gt")
 
     axs[1].set_title(f"{parent_tile_id} ground truth")
-    axs[1].imshow(gt_arr[0][0][0], cmap=cmap, vmin=-0.5, vmax=3.5)
+    axs[1].imshow(stitched_gt, cmap=cmap, vmin=-0.5, vmax=3.5)
 
     # use model forward to predict the gt tiles
     # im = model.forward(restitched_img)
     # with torch.no_grad():
     #     im = model((options.batch_size, 99, restitched_img[0][0]))
-    # axs[2].set_title(f"predicted ground truth")
-    # axs[2].imshow(im[0][0], cmap=cmap, vmin=-0.5, vmax=3.5)
-    im  = []
+
+    axs[2].set_title(f"predicted ground truth")
+    im = axs[2].imshow(stitched_pred, cmap=cmap, vmin=-0.5, vmax=3.5)
+    
     # The following lines sets up the colorbar to the right of the images
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
@@ -71,7 +72,7 @@ def restitch_and_plot(options, datamodule, model, parent_tile_id, satellite_type
     if image_dir is None:
         plt.show()
     else:
-        plt.savefig(Path(image_dir) / "restitched_visible_gt_predction.png")
+        plt.savefig(Path(image_dir)/"plot" / "restitched_visible_gt_predction.png")
         plt.close()
 
 
