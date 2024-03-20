@@ -7,8 +7,12 @@ import torchmetrics
 from src.models.supervised.segmentation_cnn import SegmentationCNN
 from src.models.supervised.unet import UNet
 from src.models.supervised.resnet_transfer import FCNResnetTransfer
+<<<<<<< HEAD
 from src.models.supervised.random_forests import RandomForests
 
+=======
+from src.models.supervised.random_forests import RandomForestsClassifier
+>>>>>>> 5362a59a4999a14d440523aae9b5e1a0024931aa
 
 
 class ESDSegmentation(pl.LightningModule):
