@@ -40,7 +40,7 @@ class EvalConfig:
     batch_size: int = 8
     seed: int = 12378921
     num_workers: int = 11
-    model_path: str | os.PathLike = root / "models" / "SegmentationCNN" / "last.ckpt"
+    model_path: str | os.PathLike = root / "models" / "SegmentationCNN" / "last-v1.ckpt"
 
 
 def main(options):
