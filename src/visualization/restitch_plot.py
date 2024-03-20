@@ -6,10 +6,15 @@ import matplotlib
 import matplotlib.pyplot as plt
 from src.preprocessing.subtile_esd_hw02 import TileMetadata, Subtile, restitch
 from src.preprocessing.file_utils import load_satellite
+import torchmetrics
 
 import torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+acc = torchmetrics.classification.MulticlassAccuracy(
+            num_classes=4, average="none"
+        )
 
 def restitch_and_plot(options, datamodule, model, parent_tile_id, satellite_type="sentinel2", rgb_bands=[4, 3, 2],
                       image_dir: None | str | os.PathLike = None):
@@ -161,6 +166,7 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
                     y_label.append(y[i].unsqueeze(0).cpu().numpy())
                     predictions.append(model(x[i].unsqueeze(0).float().to(device)).cpu().numpy())
 
+
     print(y_label[0].shape, y_label[1].shape)
     print(predictions[0], predictions[1])
     ground_truth_subtile_row.append(y_label)
@@ -173,6 +179,7 @@ def restitch_eval(dir: str | os.PathLike, satellite_type: str, tile_id: str, ran
 
     ground_truth_subtile = np.concatenate(y_label, axis=0)
     ground_truth_subtile = np.reshape(ground_truth_subtile, ( 16, 16))
+    #print(acc(torch.tensor(predictions_subtile),torch.tensor(ground_truth_subtile)))
 
     # ground_truth_subtile.append(np.concatenate(ground_truth_subtile_row, axis=-1))
     # predictions_subtile.append(np.concatenate(predictions_subtile_row, axis=-1))

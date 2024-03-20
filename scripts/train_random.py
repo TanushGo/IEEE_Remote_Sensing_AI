@@ -131,8 +131,8 @@ def train(options: ESDConfig):
 
     # run trainer.fit
     # make sure to use the datamodule option
-    trainer.fit(esd_segmentation, datamodule=esd_dm)
-    # model = ESDSegmentation.load_from_checkpoint(root / "models" / "FCNResnetTransfer" / "last.ckpt")
+    #trainer.fit(esd_segmentation, datamodule=esd_dm)
+    model = ESDSegmentation.load_from_checkpoint(root / "models" / "RandomForests" / "last.ckpt")
 
 
     # def extract_features(model, data_loader):
