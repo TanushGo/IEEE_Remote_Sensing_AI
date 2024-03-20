@@ -1,0 +1,16 @@
+program: train.py
+name: CNN
+method: bayes
+metric:
+  name: core_values/val_loss
+  goal: maximize
+parameters:
+  learning_rate:
+    values: [0.00012]
+  batch_size:
+    values: [96]
+  max_epochs:
+    values: [250]
+  depth:
+    values: [3]
+  
