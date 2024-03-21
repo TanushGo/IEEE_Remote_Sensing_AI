@@ -1,5 +1,4 @@
-## RUN WITH
-## python -m scripts.train_unet_sweep
+### python -m scripts.train_unet_sweep
 
 import pyprojroot
 import sys
@@ -25,6 +24,7 @@ from src.models.supervised.satellite_module import ESDSegmentation
 import wandb
 from lightning.pytorch.loggers import WandbLogger
 
+# check for GPU, and use if available
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
     torch.set_default_device('cuda')
@@ -67,11 +67,12 @@ def train(options: ESDConfig):
             options for the experiment
     """
 
+    # Initialize weights and biases logger
     wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
     wandb_logger = WandbLogger(project="UNET")
     
-    # initiate the ESDDatamodule with options object to initiate the datamodule correctly
-    # make sure to prepare_data in case the data has not been preprocessed
+    # initiate the ESDDatamodule with the options object
+    # prepare_data in case the data has not been preprocessed
     esd_dm = ESDDataModule(options.processed_dir, options.raw_dir, options.selected_bands, options.tile_size_gt, options.batch_size, options.seed)
     esd_dm.prepare_data()
 
@@ -81,8 +82,7 @@ def train(options: ESDConfig):
     # initialize the ESDSegmentation module
     esd_segmentation = ESDSegmentation(options.model_type, options.in_channels, options.out_channels, options.learning_rate, params)
 
-    # Use the following callbacks, they're provided for you,
-    # but you may change some of the settings
+    # Callbacks for the training loop
     # ModelCheckpoint: saves intermediate results for the neural network in case it crashes
     # LearningRateMonitor: logs the current learning rate on weights and biases
     # RichProgressBar: nicer looking progress bar (requires the rich package)
@@ -104,9 +104,8 @@ def train(options: ESDConfig):
     ]
 
     # create a pytorch_lightning Trainer
-    # make sure to use the options object to load it with the correct options
 
-    # First trainer for GPU usage, second for without
+    # If using a GPU, use the first two lines, otherwise use the third line
     # torch.set_float32_matmul_precision('medium')
     # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
     trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
@@ -115,13 +114,14 @@ def train(options: ESDConfig):
     trainer.fit(esd_segmentation, datamodule=esd_dm)
 
 def main():
-    # torch.set_default_dtype(torch.float32)
+    # GPU check and statistic for testing
     if torch.cuda.is_available():
         print(f'device count: {torch.cuda.device_count()}')
         print(f'current device: {torch.cuda.current_device()}')
         print(f'device name: {torch.cuda.get_device_name()}')
         torch.set_default_device('cuda')
 
+    # Initialize weights and biases logger with the correct project name
     wandb.init(project="UNET-sweep")
     print(wandb.config)
     options = ESDConfig(**wandb.config)
@@ -130,6 +130,7 @@ def main():
 
 if __name__ == '__main__':
 
+    # sweep parameters (.yml file had issues originally)
     sweep_config = {
         'name': 'UNet-sweep',
         'method': 'bayes',
@@ -159,5 +160,7 @@ if __name__ == '__main__':
             }
         }
     }
+
+    # run sweep via main() function, make sure the project name is correct
     sweep_id = wandb.sweep(sweep=sweep_config, project="UNet-sweep")
     wandb.agent(sweep_id, function=main, count=100)

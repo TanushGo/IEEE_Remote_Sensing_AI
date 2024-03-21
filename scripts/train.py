@@ -1,3 +1,5 @@
+### python -m scripts.train
+
 import pyprojroot
 import sys
 root = pyprojroot.here()
@@ -10,15 +12,12 @@ from typing import List
 from dataclasses import dataclass
 import numpy as np
 
-from src.models.supervised.random_forests import RandomForests
-from sklearn.ensemble import RandomForestClassifier
 from pytorch_lightning.callbacks import (
     LearningRateMonitor,
     ModelCheckpoint,
     RichProgressBar,
     RichModelSummary
 )
-
 
 from src.esd_data.datamodule import ESDDataModule
 from src.models.supervised.satellite_module import ESDSegmentation
@@ -27,6 +26,7 @@ import wandb
 
 from sklearn.metrics import accuracy_score
 
+# check for GPU, and use if available
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
     torch.set_default_device('cuda')
@@ -68,16 +68,10 @@ def train(options: ESDConfig):
         options: ESDConfig
             options for the experiment
     """
-    # torch.set_default_dtype(torch.float32)
-    # if torch.cuda.is_available():
-    #     torch.set_default_device('cuda')
 
-    # Initialize the weights and biases logger
-    wandb.init(project="RandomForests", name=options.wandb_run_name, config=options.__dict__)
-    wandb_logger = pl.loggers.WandbLogger(project="RandomForests")
-
-    # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = pl.loggers.WandbLogger(project="FCNR")
+    # Initialize the weights and biases logger with the correct project name
+    wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
+    wandb_logger = pl.loggers.WandbLogger(project="FCNR")
 
     # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = pl.loggers.WandbLogger(project="UNET")
@@ -85,9 +79,8 @@ def train(options: ESDConfig):
     # wandb.init(project="CNN", name=options.wandb_run_name, config=options.__dict__)
     # wandb_logger = pl.loggers.WandbLogger(project="CNN")
     
-    # initiate the ESDDatamodule
-    # use the options object to initiate the datamodule correctly
-    # make sure to prepare_data in case the data has not been preprocessed
+    # initiate the ESDDatamodule with the options object
+    # prepare_data in case the data has not been preprocessed
     esd_dm = ESDDataModule(options.processed_dir, options.raw_dir, options.selected_bands, options.tile_size_gt, options.batch_size, options.seed)
     esd_dm.prepare_data()
 
@@ -97,8 +90,7 @@ def train(options: ESDConfig):
     # initialize the ESDSegmentation module
     esd_segmentation = ESDSegmentation(options.model_type, options.in_channels, options.out_channels, options.learning_rate, params)
     
-    # Use the following callbacks, they're provided for you,
-    # but you may change some of the settings
+    # Callbacks for the training loop
     # ModelCheckpoint: saves intermediate results for the neural network in case it crashes
     # LearningRateMonitor: logs the current learning rate on weights and biases
     # RichProgressBar: nicer looking progress bar (requires the rich package)
@@ -119,50 +111,16 @@ def train(options: ESDConfig):
         RichModelSummary(max_depth=3),
     ]
 
-    # esd_segmentation.randForest =  RandomForestClassifier(
-    #         n_estimators=100, max_depth=5
-    #     )
-    
-    # esd_segmentation.randForest
 
     # create a pytorch_lightning Trainer
-    # make sure to use the options object to load it with the correct options
 
-    # First trainer for GPU usage, second for without
-    torch.set_float32_matmul_precision('medium')
+    # If using a GPU, use the first two lines, otherwise use the third line
+    # torch.set_float32_matmul_precision('medium')
     #trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
     trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
-    # run trainer.fit
-    # make sure to use the datamodule option
+    # run trainer.fit with the datamodule option
     trainer.fit(esd_segmentation, datamodule=esd_dm)
-
-    def extract_features(model, data_loader):
-        model.eval()
-        features_list = []
-        labels_list = []
-        with torch.no_grad():
-            for inputs, labels in data_loader:
-                features = model(inputs).cpu().numpy()
-                features_list.append(features)
-                labels_list.append(labels.numpy())
-        features = np.concatenate(features_list)
-        labels = np.concatenate(labels_list)
-        return features, labels
-
-    train_features, train_labels = extract_features(esd_segmentation.model, esd_dm.train_dataloader())
-    test_features, test_labels = extract_features(esd_segmentation.model, esd_dm.test_dataloader())
-
-    # Step 5: Train Random Forest classifier using extracted features
-    random_forest_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-    random_forest_classifier.fit(train_features, train_labels)
-
-    predictions = random_forest_classifier.predict(test_features)
-    accuracy = accuracy_score(test_labels, predictions)
-    print("Random Forest Classifier Accuracy:", accuracy)
-    
-
-    
 
 
 if __name__ == '__main__':
@@ -191,5 +149,4 @@ if __name__ == '__main__':
     # --pool_sizes=5,5,2 to call it correctly
     
     parse_args = parser.parse_args()
-    
     train(ESDConfig(**parse_args.__dict__))

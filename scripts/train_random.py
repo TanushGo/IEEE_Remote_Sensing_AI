@@ -29,6 +29,7 @@ import wandb
 from lightning.pytorch.loggers import WandbLogger
 from sklearn.metrics import accuracy_score
 
+# check for GPU, and use if available
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
     torch.set_default_device('cuda')
@@ -71,23 +72,14 @@ def train(options: ESDConfig):
         options: ESDConfig
             options for the experiment
     """
-    # torch.set_default_dtype(torch.float32)
-    # if torch.cuda.is_available():
-    #     torch.set_default_device('cuda')
 
     # Initialize the weights and biases logger
     wandb.init(project="RandomForests", name=options.wandb_run_name, config=options.__dict__)
     wandb_logger = WandbLogger(project="RandomForests")
 
-    # wandb.init(project="FCNR", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="FCNR")
-
-    # wandb.init(project="UNET", name=options.wandb_run_name, config=options.__dict__)
-    # wandb_logger = WandbLogger(project="UNET")
     
-    # initiate the ESDDatamodule
-    # use the options object to initiate the datamodule correctly
-    # make sure to prepare_data in case the data has not been preprocessed
+    # initiate the ESDDatamodule with the options object
+    # prepare_data in case the data has not been preprocessed
     esd_dm = ESDDataModule(options.processed_dir, options.raw_dir, options.selected_bands, options.tile_size_gt, options.batch_size, options.seed)
     esd_dm.prepare_data()
     
@@ -99,8 +91,7 @@ def train(options: ESDConfig):
     # initialize the ESDSegmentation module
     esd_segmentation = ESDSegmentation(options.model_type, options.in_channels, options.out_channels, options.learning_rate, params)
     
-    # Use the following callbacks, they're provided for you,
-    # but you may change some of the settings
+    # Callbacks for the training loop
     # ModelCheckpoint: saves intermediate results for the neural network in case it crashes
     # LearningRateMonitor: logs the current learning rate on weights and biases
     # RichProgressBar: nicer looking progress bar (requires the rich package)
@@ -122,16 +113,15 @@ def train(options: ESDConfig):
     ]
 
     # create a pytorch_lightning Trainer
-    # make sure to use the options object to load it with the correct options
 
-    # First trainer for GPU usage, second for without
-    torch.set_float32_matmul_precision('medium')
-    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
-    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
+    # If using a GPU, use the first two lines, otherwise use the third line
+    # torch.set_float32_matmul_precision('medium')
+    # trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, devices=options.devices, accelerator=options.accelerator, logger=wandb_logger)
+    trainer = pl.Trainer(callbacks=callbacks, max_epochs=options.max_epochs, logger=wandb_logger)
 
-    # run trainer.fit
-    # make sure to use the datamodule option
-    #trainer.fit(esd_segmentation, datamodule=esd_dm)
+    # run trainer.fit with the datamodule option
+
+    # trainer.fit(esd_segmentation, datamodule=esd_dm)
     model = ESDSegmentation.load_from_checkpoint(root / "models" / "RandomForests" / "last.ckpt")
 
 
