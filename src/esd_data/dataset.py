@@ -114,10 +114,16 @@ class DSE(Dataset):
             new_metadata: TileMetadata
                 Updated metadata with only the satellites and bands that were picked
         """
+
+        # copy of current bands
         new_metadata = deepcopy(subtile.tile_metadata)
+
+        # if we have bands to process
         if self.selected_bands is not None:
             selected_satellite_stack = {}
             new_metadata.satellites = {}
+
+            # create the new metadata for the band
             for key in self.selected_bands:
                 satellite_bands = subtile.tile_metadata.satellites[key].bands
                 selected_bands = self.selected_bands[key]
@@ -154,30 +160,19 @@ class DSE(Dataset):
             tile_metadata:
                 corresponding tile metadata
         """
-        # load the subtiles using the Subtile class in
-        # src/preprocessing/subtile_esd_hw02.py
+
+        # load the subtiles using the Subtile class
+        tile_path = self.tiles[idx]
+        subtile = Subtile()
+        subtile.load(tile_path)
 
         # call the __select_bands function to select the bands and satellites
+        selected_satellite_stack, new_metadata = self.__select_bands(subtile)
 
         # stack the time dimension with the bands, this will treat the
         # timestamps as bands for the model you may want to change this
         # depending on your model and depending on which timestamps and
         # bands you want to use
-
-        # Concatenate the time and bands
-
-        # Adjust the y ground truth to be the same shape as the X data by
-        # removing the time dimension
-
-        # all timestamps are treated and stacked as bands
-
-        # if there is a transform, apply it to both X and y
-        # Load the subtile using the Subtile class
-        tile_path = self.tiles[idx]
-        subtile = Subtile()
-        subtile.load(tile_path)
-
-        selected_satellite_stack, new_metadata = self.__select_bands(subtile)
         aggregated_data = {
             sat: self.__aggregate_time(data)
             for sat, data in selected_satellite_stack.items()
@@ -187,11 +182,14 @@ class DSE(Dataset):
             y = aggregated_data.pop("gt")
         else:
             y = subtile.satellite_stack["gt"].squeeze(0)
+
+        # Concatenate the time and bands
         X = np.concatenate(list(aggregated_data.values()), axis=0)
 
         # change made here
         y = y-1
 
+        # if there is a transform, apply it to both X and y
         if self.transform is not None:
             run_dict= self.transform({"X":X,"y":y})
             X = run_dict["X"]
