@@ -10,7 +10,6 @@ from src.models.supervised.resnet_transfer import FCNResnetTransfer
 from src.models.supervised.random_forests import RandomForests
 
 
-
 class ESDSegmentation(pl.LightningModule):
     """
     LightningModule for training a segmentation model on the ESD dataset
@@ -172,6 +171,7 @@ class ESDSegmentation(pl.LightningModule):
         sat_img, mask, _ = batch
         sat_img, mask = sat_img.float(), mask.squeeze(1).long()
 
+        # update all performance metrics
         logits = self.forward(sat_img)
         loss = nn.functional.cross_entropy(logits, mask)
         self.log("core_values/val_loss", loss)
