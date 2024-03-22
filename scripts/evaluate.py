@@ -75,19 +75,18 @@ def main(options):
         logger=False,  # Disable logging to avoid unnecessary output
     )
 
-    # trainer.validate(model, datamodule=datamodule)
+    trainer.validate(model, datamodule=datamodule)
 
-    # Assuming a method to get validation tile IDs from the datamodule
+    # create a set of all the tile ids in the validation set
     val_tile_ids = set()
     for path in Path(options.processed_dir / "4" / "Val" / "subtiles").rglob("*.npz"):
         id = re.split("(Tile\d+)", str(path))[1]
         val_tile_ids.add(id)
-
     
     val_tile_ids = sorted(list(val_tile_ids))
     print(val_tile_ids)
 
-            # Use restitch_and_plot for visualization
+    # Use restitch_and_plot for visualization
     restitch_and_plot(
         options,
         datamodule,
@@ -99,32 +98,18 @@ def main(options):
     )
 
     for parent_tile_id in val_tile_ids:
-        # Use restitch_and_plot for visualization
-        # restitch_and_plot(
-        #     options,
-        #     datamodule,
-        #     model,
-        #     parent_tile_id,
-        #     satellite_type="sentinel2",
-        #     rgb_bands=[3, 2, 1],
-        #     image_dir=options.results_dir,
-        # )
-
+        # call restitch eval on all validation tiles
         stitched_image, stitched_ground_truth, stitched_predictions = (
             restitch_eval(
                 dir=options.processed_dir,
                 satellite_type="sentinel2",
                 tile_id=parent_tile_id,
-                range_x=(0, 4),  # Example ranges, adjust as necessary
+                range_x=(0, 4),
                 range_y=(0, 4),
                 datamodule=datamodule,
                 model=model,
             )
         )
-        print("pred",stitched_predictions)
-
-        print("gti",stitched_ground_truth)
-
         # Save predictions as TIFF
         tifffile.imwrite(
             Path(options.results_dir) / f"{parent_tile_id}_prediction.tif",

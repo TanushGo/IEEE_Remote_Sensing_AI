@@ -30,26 +30,30 @@ class Encoder(nn.Module):
         self.out_channels = out_channels
         self.decoder = False
 
+        # if the kernel size and pool size is 1, it is at the last step, which means its time to decode B)
         if kernel_size == pool_size == 1:
             self.decoder = True
 
+        # convs is a list on 2d convs and activation functions, specifically relu
         convs = [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
                            padding=(kernel_size // 2, kernel_size // 2)), nn.ReLU()]
 
+        # adding to the list (encoders and RELU)
         for i in range(depth - 1):
             convs.append(nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
                                    padding=(kernel_size // 2, kernel_size // 2)))
             convs.append(nn.BatchNorm2d(out_channels))
             convs.append(nn.ReLU())
 
+        # special decoder case
         if self.decoder:
             convs = [nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(kernel_size, kernel_size),
                                padding=(kernel_size // 2, kernel_size // 2)), nn.ReLU()]
 
+        # make it a sequential
         self.convs = nn.Sequential(*convs)
         if not self.decoder:
             self.pool = nn.MaxPool2d(kernel_size=(pool_size, pool_size))
-
 
     def forward(self, img):
         """
@@ -63,8 +67,8 @@ class Encoder(nn.Module):
             img: output image of shape
             (batch, out_channels, width//pool_size, height//pool_size)
         """
-        # print(self.convs)
-        # print(f"shape: {img.shape}")
+
+        # run the image thru convs and pool (if its not a decoder)
         out_img = self.convs(img)
         
         if self.decoder:
@@ -116,13 +120,13 @@ class SegmentationCNN(nn.Module):
             kernel_size: size of the kernel of the convolutional layers
         """
 
-        # remember to turn list into ModuleList before passing to conv2d
         pool_sizes = [5, 5, 2]
 
         super(SegmentationCNN, self).__init__()
         em_size = embedding_size
         encoders = [Encoder(in_channels, em_size, depth, kernel_size, pool_sizes[0])]
 
+        # for each pool size, append an encoder
         for i in range(1, len(pool_sizes)):
             encoders.append(Encoder(em_size, em_size * 2, depth, kernel_size, pool_sizes[i]))
             em_size *= 2
@@ -130,7 +134,6 @@ class SegmentationCNN(nn.Module):
         # final decoder layer
         encoders.append(Encoder(embedding_size * (2 ** (len(pool_sizes)-1)), out_channels, depth, 1, 1))
 
-        # encoders[-1].decoder = True
         self.encoders = nn.ModuleList(encoders)
         
 
@@ -144,6 +147,7 @@ class SegmentationCNN(nn.Module):
             y_pred: image of shape
             (batch, out_channels, width//prod(pool_sizes), height//prod(pool_sizes))
         """
+        # forward in running the img thru the list of encoders and returning
         img = X
         for enc in self.encoders:
             
