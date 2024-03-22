@@ -13,30 +13,41 @@
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white)
 
 
-## Assignment Overview
-In this homework we will:
-- [ ] Create a baseline deep learning model for semantic segmentation by:
-  - [ ] Building a simple CNN segmentation model from scratch.
-  - [ ] Use the pre-trained FCNResnet101 to transfer learn the segmentation task on remote sensing data.
-  - [ ] Build a UNet segmentation model to experiment with skip connection networks.
-- [ ] Use PyTorch Lightning to simplify and decouple training and validation loops. 
-- [ ] Monitor model training using Weights and Biases
-- [ ] Perform hyperparameter sweeps to select best model hyperparameters.
-- [ ] Adapt the code from HW02 to ensure that we can reconstruct ground truth, and prediction subtiles to visually compare.
-- [ ] Perform validation to evaluate segmentation task performance using:
-  - [ ] Jaccard Index
-  - [ ] Intersection over Union
-  - [ ] Accuracy
-  - [ ] AUC: Area under the Receiver Operator Curve (ROC)
-  - [ ] F1-score
-- [ ] Profit :moneybag:
+## Project Overview
+Using the dataset from the [IEEE GRSS 2021 Challenge](https://www.grss-ieee.org/community/technical-committees/2021-ieee-grss-data-fusion-contest-track-dse/), we created multiple models to accurately represent the four classes: 
+- regions with settlements without electricity
+- regions with settlements and electricty
+- regions without settlements and electricty
+- regions without settlements, but with electricity
+The primary focus was the first option listed: regions with settlements that do not have electricity access or availability.  
 
-## Adaptations to pre-existing files from HW02
-- In `src/esd_data/dataset.py` adapt `__getitem__` to return the same output, but the label `y` should be `y-1` because the labeled range goes from 1-4 and in PyTorch the range is zero-indexed (0-3).
-- **IMPORTANT:** In `src/esd_data/datamodule.py`:
-  - adapt `collate_fn` to return `torch.stack(Xs)` and `torch.stack(ys)`
-  - adapt the random validation, train split into a train-validation split amongs the parent tile ids rather than sub-tiles themselves. We need to do this because we want to guarantee that we have all subtiles to restitch back to complete 16x16 images to compare with ground truth images per parent tiles and run evaluation metrics over.
-  - To do this change `__load_and_preprocess` to run sci-kit learn's `train_test_split` on the parent tiles and save their respective filepaths to a train list and a validation list. Then when calling the subtiler `grid_slice` from HW02 you save all the respective subtiles in a Train directory or a Val directory with the following recommended paths: `data/processed/<your_ground_truth_subtile_size_dim>/Train` or `data/processed/<your_ground_truth_subtile_size_dim>/Val`. This way you can ensure that you will have all subtiles to a respective parent tile id to enable you to reconstruct your model predictions to the 16x16 dimensions required to visually compare it to the ground truth.
+Three baseline models are provided:
+- Segmentation CNN via `src/models/supervised/segmentation_cnn.py`
+- FCN ResNet via `src/models/supervised/resnet_transfer.py`
+- U-Net via `src/models/supervised/unet.py`
+
+Additionally, the random forests technique can be applied to to any of these models via `scripts/train_random.py`.
+
+## Getting Started
+## Setting Up Your Virtual Project Environment
+To make sure you download all the packages, we utilize a Python virtual environment which is an isolated environment that allows you to run the code with its own dependencies and libraries independent of other Python projects you may be working on. Here's how to set it up:
+
+1. Navigate to the final-project-hungry-hungry-hippo directory in your terminal.
+
+2. Create a virtual environment:
+   
+   `python3 -m venv esdenv`
+3. Activate the virtual environment:
+   * On macOS and Linux:
+  
+        `source esdenv/bin/activate`
+   * On Windows:
+  
+        `.\esdenv\Scripts\activate`
+4. Install the required packages:
+    `pip install -r requirements.txt`
+
+To deactivate the virtual environment, type `deactivate`.
 
 
 ## Images to Save and Inspect
