@@ -32,20 +32,24 @@ from typing import List, Tuple, Dict
 from src.preprocessing.file_utils import Metadata
 from sklearn.model_selection import train_test_split
 
+
 def collate_fn(batch):
+    '''
+    extracts and returns the Xs, ys, and metadata from batch data
+    :param batch: list of tuples in the form (X, y, metadata)
+    :return: torch stack of Xs, torch stack of ys, list of metaata
+    '''
     Xs = []
     ys = []
     metadatas = []
     for X, y, metadata in batch:
         if len(X.shape) == 4:
             X = X.squeeze(0)
-            # X = X.view(X.shape[0], -1)
         Xs.append(X)
         ys.append(y)
         metadatas.append(metadata)
 
-    # Xs = np.stack(Xs)
-    # ys = np.stack(ys)
+    # explicitly converting to torch float 32 due to mac compatibility issues
     return torch.stack(Xs).to(dtype=torch.float32), torch.stack(ys).to(dtype=torch.float32), metadatas
 
 
@@ -182,22 +186,11 @@ class ESDDataModule(pl.LightningDataModule):
         Create and return a torch.utils.data.DataLoader with
         self.val_dataset
         """
-
         return torch.utils.data.DataLoader(
             self.val_dataset, batch_size=self.batch_size, collate_fn=collate_fn
         )
 
-# THINGS TO CHANGE: 
-
-# STEP 1: Add attributes to hold train and validation tile paths
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.train_tile_paths = []
-    #     self.val_tile_paths = []
-        
-# STEP 2: Split parent tiles into train and validation sets before processing
-
+    # Split parent tiles into train and validation sets before processing
     def prepare_data(self):
         if not os.path.exists(self.processed_dir):
             parent_tiles = list(Path(self.raw_dir).glob("*"))
@@ -210,9 +203,8 @@ class ESDDataModule(pl.LightningDataModule):
             # Process and save validation tiles
             for tile in val_tiles:
                 self.__process_and_save_tile(tile, "Val")
-            
-# STEP 3: Adapting processing logic that saves subtiles to Train or Val directories
 
+    # Adapting processing logic that saves subtiles to Train or Val directories
     def __process_and_save_tile(self, tile_path, dataset_type):
         
         satellite_stack, satellite_metadata = self.__load_and_preprocess(tile_path)
@@ -222,11 +214,9 @@ class ESDDataModule(pl.LightningDataModule):
         save_dir = Path(self.processed_dir) / str(self.tile_size_gt) / dataset_type
         save_dir.mkdir(parents=True, exist_ok=True)
         for subtile in subtile_stack:
-            # print(f'Saving {subtile.satellite_stack} to {save_dir}')
             subtile.save(save_dir)
 
-# STEP 4:  Setup logic that loads from Train/Val directories instead of a single directory
-
+    # Setup logic that loads from Train/Val directories instead of a single directory
     def setup(self, stage: str):
         if stage == "fit":
             train_dataset_path = Path(self.processed_dir) / str(self.tile_size_gt) / "Train"

@@ -34,7 +34,6 @@ class Blur(object):
 
     def __init__(self, kernel=3):
         self.kernel = kernel
-        pass
 
     def __call__(self, sample: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
@@ -50,18 +49,15 @@ class Blur(object):
                     Has two keys, 'X' and 'y'.
                     Each of them has shape (bands, width, height)
         """
-
+        # a function to apply the blur so we can use the function apply per band
         def blur_transform(x):
             return cv2.blur(x, (self.kernel, self.kernel))
        
         new_X = apply_per_band(sample["X"], blur_transform)
-        
 
         transformed = {"X": new_X, "y": sample["y"]}
 
         return transformed
-
-        #  dimensions of img: (t, bands, tile_height, tile_width)
 
 
 class AddNoise(object):
@@ -108,12 +104,12 @@ class AddNoise(object):
         std = random.uniform(0, self.std_lim)
         old_X = sample["X"]
         new_X = []
-        if(len(sample["X"].shape)==4):
+        if len(sample["X"].shape) == 4:
             tiles, band, w, h = old_X.shape
             for t in range(tiles):
                 arr = []
                 for b in range(band):
-                    # for every pixel
+                    # for every pixel, add random noise
                     noise = np.random.normal(self.mean, std, (w, h))
                     added_noise = old_X[t, b, :, :] + noise
                     arr.append(np.stack(added_noise))
@@ -123,13 +119,12 @@ class AddNoise(object):
             band, w, h = old_X.shape
             arr = []
             for b in range(band):
-                # for every pixel
+                # for every pixel, add random noise
                 noise = np.random.normal(self.mean, std, (w, h))
                 added_noise = old_X[ b, :, :] + noise
                 arr.append(np.stack(added_noise))
 
             new_X.append(np.stack(arr))
-        
 
         new_X = np.stack(new_X)
 
@@ -164,6 +159,7 @@ class RandomVFlip(object):
                     Has two keys, 'X' and 'y'.
                     Each of them has shape (bands, width, height)
         """
+        # randomly flips based on a whether a randomly generated number is less than the given probability
         rand = random.random()
         if rand <= self.prob:
             self.flip = True
@@ -171,6 +167,7 @@ class RandomVFlip(object):
         if not self.flip:
             return sample
 
+        # a function to apply the vertical flip so we can use the function apply per band
         def VFlip_transform(x):
             return cv2.flip(x, 0)
         
@@ -208,6 +205,7 @@ class RandomHFlip(object):
                     Has two keys, 'X' and 'y'.
                     Each of them has shape (bands, width, height)
         """
+        # randomly flips based on a whether a randomly generated number is less than the given probability
         rand = random.random()
         if rand <= self.prob:
             self.flip = True
@@ -215,6 +213,7 @@ class RandomHFlip(object):
         if not self.flip:
             return sample
 
+        # a function to apply the vertical flip so we can use the function apply per band
         def HFlip_transform(x):
             return cv2.flip(x, 1)
 
