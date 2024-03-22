@@ -1,6 +1,6 @@
 """
 train_sweeps.py runs hyperparameter search using Weights and Biases and the predefined sweep.yml file
-    python scripts/train_sweeps.py --sweep_file sweep.yml
+    python scripts/train_sweeps.py --sweep_file scripts/sweep.yml
     multiple sweeps can be run in parallel by running the above command in multiple terminals
 
 For more information on sweeps in Weights and Biases, please refer to the following link:

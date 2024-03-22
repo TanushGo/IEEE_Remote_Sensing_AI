@@ -1,8 +1,8 @@
 """
 train_sweeps.py runs hyperparameter search using Weights and Biases and the predefined sweep.yml file
 Please adapt the sweep.yml file to your needs and run the script with the following command:
-    python scripts/train_cnn_sweeps.py --sweep_file cnn_sweeps.yml
-    python scripts/train_cnn_sweeps.py --sweep_file cnn_single.yml
+    python scripts/train_cnn_sweeps.py --sweep_file scripts/cnn_sweeps.yml
+    python scripts/train_cnn_sweeps.py --sweep_file scripts/cnn_single.yml
 
 For more information on sweeps in Weights and Biases, please refer to the following link:
 https://docs.wandb.ai/guides/sweeps
