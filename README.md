@@ -54,13 +54,13 @@ To deactivate the virtual environment, type `deactivate`.
 We use wandb for our logging needs. After the environment is set up, run `wandb login` which will guide you through the login process to link your account via the API key provided in your account or team.
 
 ### Model Training 
-To train one of the three main models, run `python -m scripts.train`. Specifics of which model to choose, which parameters to train on, and how to log this data via weights and biases can be modified in `scripts/train.py/. The model type and its hyperparameters can also be modified via the run command mentioned, and the possible arguments + their descriptions are listed at the bottom of the training file.
+To train one of the three main models, run `python -m scripts.train`. Specifics of which model to choose, which parameters to train on, and how to log this data via weights and biases can be modified in `scripts/train.py/`. The model type and its hyperparameters can also be modified via the run command mentioned, and the possible arguments along with their descriptions are listed at the bottom of the training file.
 
 ### Hyperparameter Sweeps
-To run sweeps using wandb that can automate the process of finding optimal parameters, run `python scripts/train_sweeps.py --sweep_file=scripts/sweep.yml` where `sweep.yml` is a YAML file. More instructions on the specific format of information and the possible options can be found [here](https://docs.wandb.ai/guides/sweeps/define-sweep-configuration). Configuration for which wandb project to use and how many models to train can be found within `train_sweeps.py'.
+To run sweeps using wandb that can automate the process of finding optimal parameters, run `python scripts/train_sweeps.py --sweep_file=scripts/sweep.yml` where `sweep.yml` is a YAML file. More instructions on the specific format of information and the possible options can be found [here](https://docs.wandb.ai/guides/sweeps/define-sweep-configuration). Configuration for which wandb project to use and how many models to train can be found within `train_sweeps.py`.
 
 ### Validation
-Validate with the script `scripts/evaluate.py` where you will load the model weights from the relevant (or last) checkpoint in `data/models/<modelname/*.ckpt' and make a forward pass through your model in order to generate prediction masks. This script also has some editable options in the main method at the bottom of the file, mainly in regards to the location of the checkpoint to use, and other data locations to use or output to.
+Validate models with `scripts/evaluate.py` where you will load the model weights from the relevant (or last) checkpoint in `data/models/<modelname/*.ckpt` and make a forward pass through your model in order to generate prediction masks. This script also has some editable options in the main method at the bottom of the file, mainly in regards to the location of the checkpoint to use, and other data locations to use or output to.
 
 ### Images to Inspect and/or Save
 - Visualization of restitched ground truth and predictions in `data/predictions/plot/`
