@@ -28,7 +28,6 @@ Three baseline models are provided:
 
 Additionally, the random forests technique can be applied to to any of these models via `scripts/train_random.py`.
 
-## Getting Started
 ## Setting Up Your Virtual Project Environment
 To make sure you download all the packages, we utilize a Python virtual environment which is an isolated environment that allows you to run the code with its own dependencies and libraries independent of other Python projects you may be working on. Here's how to set it up:
 
@@ -49,45 +48,21 @@ To make sure you download all the packages, we utilize a Python virtual environm
 
 To deactivate the virtual environment, type `deactivate`.
 
+## Usage 
 
-## Images to Save and Inspect
-- Visualization of restitched ground truth and predictions from `scripts/evaluate.py`
-- Reconstructed 16x16 predictions for each model architecture in `data/predictions/<modelname>`
-  
-# Modeling
+### Weights and Biases
+We use wandb for our logging needs. After the environment is set up, run `wandb login` which will guide you through the login process to link your account via the API key provided in your account or team.
 
-
-- `__init__`
-- `forward`
-
-
-For more information on how to use PyTorch Lightning with PyTorch as well as helpful tutorials, see:
-- [PyTorch Lightning: Basic Skills](https://lightning.ai/docs/pytorch/latest/levels/core_skills.html)
-- [A Recipe for Training Neural Networks](http://karpathy.github.io/2019/04/25/recipe/)
-
-
-
-![FCNResnet101](assets/fcn.png)
-
-![UNet](assets/unet.png)
-
-## Training
-We will train the models using the model architectures defined above in conjunction with the PyTorch Lightning Module for ease of running the training step in `train.py.` To monitor model training make sure to make an account with Weights and Biases for yourself and then create a team. For details on how to get started see [How to Use W&B Teams For Your University Machine Learning Projects for Free](https://wandb.ai/ivangoncharov/wandb-teams-for-students/reports/How-to-Use-W-B-Teams-For-Your-University-Machine-Learning-Projects-For-Free---VmlldzoxMjk1Mjkx).
-
-### `ESDConfig` Python Dataclass
-In `train.py` we have created an `ESDConfig` dataclass to store all the paths and parameters for experimenting with the training step. If you notice, in the main function we have provided you with code that utilize the library `argparse` which takes command line arguments using custom flags that allow the user to overwrite the default configurations defined in the dataclass we provided. When running train, for example, if you would like to run training for the architecture `SegmentationCNN` for five epochs you would run:
-
-`python -m scripts.train --model_type=SegmentationCNN --max_epochs=5`
-
+### Model Training 
+To train one of the three main models, run `python -m scripts.train`. Specifics of which model to choose, which parameters to train on, and how to log this data via weights and biases can be modified in `scripts/train.py/. The model type and its hyperparameters can also be modified via the run command mentioned, and the possible arguments + their descriptions are listed at the bottom of the training file.
 
 ### Hyperparameter Sweeps
-We will be using Weights and Biases Sweeps by configuring a yaml file called `sweeps.yml` in order to automate hyperparameter search over metrics such as batch size, epochs, learning rate, and optimizer. You may also experiment with the number of encoders and decoders you would like to add to your model architecture given that you are sensitive to the dimensions of your input image and the dimensions of the output prediction with respect to the ground truth. Some useful articles on how to perform sweeps and use the information to choose the best hyperparameter settings for your model can be found:
-- [Tune Hyperparameters](https://docs.wandb.ai/guides/sweeps)
-- [Running Hyperparameter Sweeps to Pick the Best Model](https://wandb.ai/wandb_fc/articles/reports/Running-Hyperparameter-Sweeps-to-# U-Net: Segmentation `src/models/unsupervised/unet.py`
-Pick-the-Best-Model--Vmlldzo1NDQ0OTIy)
+To run sweeps using wandb that can automate the process of finding optimal parameters, run `python scripts/train_sweeps.py --sweep_file=scripts/sweep.yml` where `sweep.yml` is a YAML file. More instructions on the specific format of information and the possible options can be found [here](https://docs.wandb.ai/guides/sweeps/define-sweep-configuration). Configuration for which wandb project to use and how many models to train can be found within `train_sweeps.py'.
 
-To run training with the hyperparameter sweeps you define in `sweeps.yml` please run `train_sweeps.py --sweep_file=sweeps.yml` provided for you.
+### Validation
+Validate with the script `scripts/evaluate.py` where you will load the model weights from the relevant (or last) checkpoint in `data/models/<modelname/*.ckpt' and make a forward pass through your model in order to generate prediction masks. This script also has some editable options in the main method at the bottom of the file, mainly in regards to the location of the checkpoint to use, and other data locations to use or output to.
 
-## Validation
-You will run validation using the script `evaluate.py` where you will load the model weights from the last checkpoint and make a forward pass through your model in order to generate prediction masks. Similar to `ESDConfig` in `train.py`, `EvalConfig` is the dataclass that sets the default configuration for the validation loop when arguments are not passed via command line. Note the use of `argparse` in the main function and its similarities to the `train.py` file.
-
+### Images to Inspect and/or Save
+- Visualization of restitched ground truth and predictions in `data/predictions/plot/`
+- Reconstructed 16x16 predictions for each model architecture in `data/predictions/<Tile*>`
+  
