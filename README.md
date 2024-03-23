@@ -27,6 +27,9 @@ Three baseline models are provided:
 - U-Net via `src/models/supervised/unet.py`
 
 Additionally, the random forests technique can be applied to to any of these models via `scripts/train_random.py`.
+- Random Forest utilizes feature extraction on the outputs of the Neural Network Models
+- We then train a Random Forest Classifier on these features to get a dual model
+- This is implement in train_random
 
 ## Setting Up Your Virtual Project Environment
 To make sure you download all the packages, we utilize a Python virtual environment which is an isolated environment that allows you to run the code with its own dependencies and libraries independent of other Python projects you may be working on. Here's how to set it up:
