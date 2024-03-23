@@ -122,26 +122,15 @@ def train(options: ESDConfig):
     # run trainer.fit with the datamodule option
 
     # trainer.fit(esd_segmentation, datamodule=esd_dm)
+
+
+    #preload model if it exists
     model = ESDSegmentation.load_from_checkpoint(root / "models" / "RandomForests" / "last.ckpt")
 
 
-    # def extract_features(model, data_loader):
-    #     # resnet_features = torch.nn.Sequential(*list(model.children())[:-1])
-    #     print(model)
-    #     resnet_features = model.model.backbone
-    #     model.eval()
-    #     resnet_features.eval()
-    #     features_list = []
-    #     labels_list = []
-    #     with torch.no_grad():
-    #         for inputs, labels, _ in data_loader:
-    #             #features = model(inputs.float().to(device)).cpu()#.numpy()
-    #             # print(type(features))
-    #             features = resnet_features(inputs.float().to(device)).cpu()
-    #             print(f"Features are {features.shape}")
-    #             flattened_features = torch.permute(features,(1,0,2,3)).reshape(-1, features.shape[1])#.transpose(1, 0)
+   
 
-
+#do feature extraction on the output from putting data into the model this will create the data for random forest training
     def extract_features(model, data_loader):
         CNN_features = torch.nn.Sequential(*list(model.children())[:-1])
         #resnet_features = model.backbone
@@ -171,20 +160,12 @@ def train(options: ESDConfig):
         print(train_class)
         return features, labels
 
-    # train_features, train_labels = extract_features(model, esd_dm.train_dataloader())
-    # test_features, test_labels = extract_features(model, esd_dm.val_dataloader())
-
-    # # Step 5: Train Random Forest classifier using extracted features
-    # print("training")
-    # random_forest_classifier = RandomForestClassifier(n_estimators=500, criterion="log_loss", random_state=42, max_features=4,
-    #                                                   min_samples_leaf=100)
-    # random_forest_classifier.fit(train_features, train_labels)
-
+   
+    #getting train and test features from the dataset
     train_features, train_labels = extract_features(model, esd_dm.train_dataloader())
     test_features, test_labels = extract_features(model, esd_dm.val_dataloader())
 
-    # Step 5: Train Random Forest classifier using extracted features
-    print("training")
+    # Train Random Forest classifier using extracted features
     random_forest_classifier = RandomForestClassifier(n_estimators=500, criterion="log_loss", random_state=42, max_features=4,
                                                       min_samples_leaf=100)
     random_forest_classifier.fit(train_features, train_labels)

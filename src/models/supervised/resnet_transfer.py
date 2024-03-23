@@ -31,8 +31,7 @@ class FCNResnetTransfer(nn.Module):
         super().__init__()
         # Load the model fcn_resnet101 from segmentation model weights from online like torch.hub
         
-        # Replace the first and last layer of the network so that the number of channels fits with
-        # the number of channels of the image and the number of classes we are predicting
+        #loading the base model and implementing it with the backbone of convolutions and pooling
         self.model = fcn_resnet101(num_classes=output_channels)
         
         self.model.backbone.conv1 = nn.Conv2d(input_channels, 64, kernel_size=(7,7),stride=(2,2), padding=(3,3), bias=False) 
@@ -53,6 +52,6 @@ class FCNResnetTransfer(nn.Module):
             pred_y: predicted labels of size
             (batch, self.output_channels, width//self.scale_factor, height//self.scale_factor)
         """
-        # Be careful of the output data structure of model you loaded (e.g. dict, tuple, etc.)
+        # getting output from model
         y = self.model.forward(x)
         return self.pool(y["out"])

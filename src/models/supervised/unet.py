@@ -24,7 +24,9 @@ class DoubleConvHelper(nn.Module):
             mid_channels (int): number of channels to use in the intermediate layer    
         """
         super().__init__()
-        mid_channels = out_channels if mid_channels is None else mid_channels
+        mid_channels = out_channels if mid_channels is None else mid_channels #checking to see if midchannels is none
+        
+        #constructing model with different layers and then creating the sequential object
         layers = [
             nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(mid_channels),
@@ -44,6 +46,7 @@ class Encoder(nn.Module):
     """ Downscale using the maxpool then call double conv helper. """
     def __init__(self, in_channels, out_channels):
         super().__init__()
+        #aCreating encoder with Doubleconvhelper and max pooling in a sequential
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
             DoubleConvHelper(in_channels, out_channels)
@@ -57,6 +60,7 @@ class Decoder(nn.Module):
     """ Upscale using ConvTranspose2d then call double conv helper. """
     def __init__(self, in_channels, out_channels):
         super().__init__()
+        #creating upscaling and double conv helper for decoders
         self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
         self.conv = DoubleConvHelper(in_channels, out_channels)
     
@@ -137,14 +141,17 @@ class UNet(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
+        #Creating inital setp for unet
         self.inc = (DoubleConvHelper(in_channels, embedding_size))
         self.encoders = []
         size = embedding_size
+        #Creating all the encoders for first half of unet
         for i in range(n_encoders):
             self.encoders.append(Encoder(size,size*2))
             size=size*2
 
         self.decoders = []
+        #Creating all the decoders for second half of unet
         for i in range(n_encoders):
             if(i == n_encoders-1):
                 self.decoders.append(Decoder(size,out_channels))
@@ -152,7 +159,7 @@ class UNet(nn.Module):
             self.decoders.append(Decoder(size,size//2))
             size=size//2
 
-    
+        #Pooling the output 
         self.outc =nn.MaxPool2d(kernel_size=(scale_factor,scale_factor))
 
 
@@ -171,20 +178,20 @@ class UNet(nn.Module):
             (batch, some_embedding_size//2, 2*some_width, 2*some_height)
             as the residual.
         """
-        # if type(x) is 
-        # print(f'x type is {type(x)}')
-        # if torch.cuda.is_available():
-        #     x = x.cuda()
-
+        #Doing the first step in the process
         x = self.inc(x)
         residuals = [x]
+        #using all the encoders and creating the residuals in a lis
         for i, enc in enumerate(self.encoders):
             residuals.append(enc(residuals[-1]))
         
+        #getting encoder output
         x = residuals[-1]
+        #using the decoders and combining output with each layers residual
         for i,(dec,res) in enumerate(zip(self.decoders,reversed(residuals[:-1]))):
             x = dec(x,res)
 
+        #Getting the pooled output
         x = self.outc(x)
         return x
 
