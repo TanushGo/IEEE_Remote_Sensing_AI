@@ -1,4 +1,4 @@
-# HW03: Semantic Segmentation and Model Monitoring
+# Final Project
 
 ## Hungry Hungry Hippos
 @Bavhead  
